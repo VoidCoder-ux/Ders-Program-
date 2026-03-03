@@ -1,0 +1,1828 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gelişmiş Öğrenci Asistanı</title>
+    <style>
+        :root {
+            --bg-color: #f3f4f6;
+            --sidebar-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --card-bg: #ffffff;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: rgba(79, 70, 229, 0.1);
+            --secondary: #10b981;
+            --secondary-light: rgba(16, 185, 129, 0.1);
+            --danger: #ef4444;
+            --danger-light: rgba(239, 68, 68, 0.1);
+            --warning: #f59e0b;
+            --warning-light: rgba(245, 158, 11, 0.1);
+            --border: #e5e7eb;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0f172a;
+            --sidebar-bg: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --card-bg: #1e293b;
+            --primary-light: rgba(79, 70, 229, 0.2);
+            --secondary-light: rgba(16, 185, 129, 0.2);
+            --danger-light: rgba(239, 68, 68, 0.2);
+            --warning-light: rgba(245, 158, 11, 0.2);
+            --border: #334155;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        *::-webkit-scrollbar { width: 6px; height: 6px; }
+        *::-webkit-scrollbar-track { background: transparent; }
+        *::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+        *::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 270px;
+            min-width: 270px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem 1rem;
+            z-index: 100;
+            transition: var(--transition);
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 0.5rem;
+            letter-spacing: -0.5px;
+        }
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+        }
+
+        .nav-items { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        .nav-item {
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            transition: var(--transition);
+            position: relative;
+            user-select: none;
+        }
+        .nav-item:hover { background-color: var(--primary-light); color: var(--text-main); transform: translateX(4px); }
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+        }
+        .nav-item .nav-icon {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+        .nav-badge {
+            margin-left: auto;
+            background: var(--danger);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+        .nav-item.active .nav-badge { background: rgba(255,255,255,0.3); }
+
+        .sidebar-footer {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        .theme-toggle {
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-weight: 600;
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+        .theme-toggle:hover { border-color: var(--primary); color: var(--primary); }
+        
+        .export-btn {
+            padding: 0.6rem 1rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 500;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            transition: var(--transition);
+            font-size: 0.85rem;
+        }
+        .export-btn:hover { border-color: var(--secondary); color: var(--secondary); background: var(--secondary-light); }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            scroll-behavior: smooth;
+        }
+
+        /* Views */
+        .view { display: none; animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Header */
+        .header { margin-bottom: 2rem; }
+        .header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -0.5px; }
+        .header p { color: var(--text-muted); font-size: 1rem; }
+
+        /* Grid */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+
+        /* Cards */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        .card:hover { box-shadow: var(--shadow-lg); }
+        .card h2 {
+            font-size: 1.15rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.75rem;
+            font-weight: 700;
+        }
+
+        /* Stat Cards */
+        .stat-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: var(--transition);
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+        .stat-icon.blue { background: var(--primary-light); }
+        .stat-icon.green { background: var(--secondary-light); }
+        .stat-icon.red { background: var(--danger-light); }
+        .stat-icon.yellow { background: var(--warning-light); }
+        .stat-info h3 { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+        .stat-info p { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+
+        /* Forms */
+        .form-group { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+        .form-row { display: flex; gap: 1rem; }
+        .form-row > * { flex: 1; }
+        label { font-weight: 600; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select, textarea {
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            width: 100%;
+            transition: var(--transition);
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+        textarea { resize: vertical; min-height: 100px; }
+
+        /* Buttons */
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4); }
+        button:active { transform: translateY(0); }
+        .btn-danger { background: linear-gradient(135deg, var(--danger), #dc2626); }
+        .btn-danger:hover { box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); }
+        .btn-secondary { background: var(--bg-color); color: var(--text-main); border: 2px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--primary); color: var(--primary); box-shadow: none; }
+        .btn-small { padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 6px; }
+        .btn-green { background: linear-gradient(135deg, var(--secondary), #059669); }
+        .btn-green:hover { box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
+
+        /* List Items */
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            background-color: var(--bg-color);
+            border-radius: var(--radius-sm);
+            margin-bottom: 0.5rem;
+            border-left: 4px solid var(--primary);
+            transition: var(--transition);
+        }
+        .list-item:hover { transform: translateX(4px); }
+        .list-item-content h4 { margin-bottom: 0.2rem; font-weight: 600; }
+        .list-item-content p { font-size: 0.85rem; color: var(--text-muted); }
+        .list-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+        .list-item.completed { opacity: 0.5; border-left-color: var(--secondary); }
+        .list-item.completed h4 { text-decoration: line-through; }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+        .empty-state .empty-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+        .empty-state p { font-size: 0.9rem; }
+
+        /* Pomodoro */
+        .pomodoro-container { text-align: center; padding: 2rem 0; }
+        .timer-ring {
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            margin: 0 auto 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            position: relative;
+            background: var(--bg-color);
+            border: 6px solid var(--border);
+            transition: var(--transition);
+        }
+        .timer-ring.running { border-color: var(--primary); box-shadow: 0 0 30px var(--primary-light); }
+        .timer-ring.break-mode { border-color: var(--secondary); box-shadow: 0 0 30px var(--secondary-light); }
+        .timer-display {
+            font-size: 4rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            color: var(--primary);
+            font-family: var(--font-mono);
+            letter-spacing: 2px;
+        }
+        .timer-ring.break-mode .timer-display { color: var(--secondary); }
+        .timer-label { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .timer-controls { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+        .pomo-stats {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+        .pomo-stat { text-align: center; }
+        .pomo-stat h4 { font-size: 1.5rem; color: var(--primary); }
+        .pomo-stat p { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* Progress bar */
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        .progress-fill.green { background: linear-gradient(90deg, var(--secondary), #34d399); }
+        .progress-fill.blue { background: linear-gradient(90deg, var(--primary), #818cf8); }
+        .progress-fill.red { background: linear-gradient(90deg, var(--danger), #f87171); }
+
+        /* Search bar */
+        .search-bar {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+        .search-bar input {
+            padding-left: 2.5rem;
+        }
+        .search-bar::before {
+            content: '🔍';
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+        }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .toast {
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius-sm);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: var(--shadow-lg);
+            animation: slideInRight 0.4s ease, fadeOutRight 0.4s ease 2.5s forwards;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 350px;
+        }
+        .toast.success { background: linear-gradient(135deg, var(--secondary), #059669); }
+        .toast.error { background: linear-gradient(135deg, var(--danger), #dc2626); }
+        .toast.info { background: linear-gradient(135deg, var(--primary), #7c3aed); }
+        .toast.warning { background: linear-gradient(135deg, var(--warning), #d97706); }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeOutRight {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(100px); }
+        }
+
+        /* Weekly schedule table */
+        .schedule-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .schedule-table th {
+            background: var(--primary);
+            color: white;
+            padding: 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .schedule-table td {
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            vertical-align: top;
+            min-height: 60px;
+            font-size: 0.8rem;
+        }
+        .schedule-table .class-cell {
+            background: var(--primary-light);
+            border-radius: 4px;
+            padding: 4px 6px;
+            margin: 2px 0;
+            font-weight: 600;
+            font-size: 0.75rem;
+            border-left: 3px solid var(--primary);
+        }
+        .schedule-table .today-col { background: var(--primary-light); }
+
+        /* Confirm dialog */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 9998;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+        .modal-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+        }
+        .modal-box h3 { margin-bottom: 0.5rem; font-size: 1.2rem; }
+        .modal-box p { color: var(--text-muted); margin-bottom: 1.5rem; }
+        .modal-actions { display: flex; gap: 0.75rem; justify-content: center; }
+
+        /* GPA Calculator */
+        .gpa-display {
+            font-size: 3rem;
+            font-weight: 800;
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            background: var(--bg-color);
+            margin-bottom: 1rem;
+        }
+        .gpa-excellent { color: var(--secondary); }
+        .gpa-good { color: var(--primary); }
+        .gpa-average { color: var(--warning); }
+        .gpa-low { color: var(--danger); }
+
+        .grade-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            background: var(--bg-color);
+            border-radius: var(--radius-sm);
+        }
+        .grade-row input, .grade-row select { margin: 0; }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            body { flex-direction: column; height: 100dvh; }
+            .sidebar {
+                width: 100%;
+                min-width: unset;
+                padding: 0.75rem;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                flex-direction: column;
+                gap: 8px;
+            }
+            .logo { margin-bottom: 0; font-size: 1.2rem; justify-content: center; }
+            .logo-icon { width: 32px; height: 32px; font-size: 1rem; }
+            .nav-items {
+                flex: none;
+                flex-direction: row;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                width: 100%;
+                padding-bottom: 4px;
+                gap: 6px;
+            }
+            .nav-item {
+                flex: 0 0 auto;
+                padding: 0.5rem 0.75rem;
+                font-size: 0.85rem;
+                white-space: nowrap;
+                gap: 6px;
+            }
+            .nav-item .nav-icon { width: 22px; height: 22px; font-size: 0.95rem; }
+            .nav-badge { font-size: 0.65rem; padding: 1px 5px; }
+            .sidebar-footer { display: none; }
+            .main-content { padding: 1rem; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .grid-3 { grid-template-columns: 1fr; }
+            .grid-4 { grid-template-columns: 1fr 1fr; }
+            .form-row { flex-direction: column; gap: 0; }
+            .timer-ring { width: 220px; height: 220px; }
+            .timer-display { font-size: 3rem; }
+            .header h1 { font-size: 1.5rem; }
+            .pomo-stats { gap: 1rem; }
+            
+            /* Mobile bottom theme toggle */
+            .mobile-theme-toggle {
+                display: flex !important;
+                position: fixed;
+                bottom: 1rem;
+                right: 1rem;
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
+                background: var(--primary);
+                color: white;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.3rem;
+                box-shadow: var(--shadow-lg);
+                z-index: 999;
+                border: none;
+                cursor: pointer;
+            }
+        }
+        .mobile-theme-toggle { display: none; }
+
+        /* Print styles */
+        @media print {
+            .sidebar, .toast-container, .mobile-theme-toggle { display: none !important; }
+            .main-content { padding: 0; }
+            .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+            button { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">🎓</div>
+            Öğrenci Asistanı
+        </div>
+
+        <div class="nav-items">
+            <div class="nav-item active" onclick="app.switchTab('dashboard', this)">
+                <span class="nav-icon">📊</span> Dashboard
+            </div>
+            <div class="nav-item" onclick="app.switchTab('schedule', this)">
+                <span class="nav-icon">📅</span> Program
+            </div>
+            <div class="nav-item" onclick="app.switchTab('agenda', this)">
+                <span class="nav-icon">📝</span> Ajanda
+                <span class="nav-badge" id="task-badge" style="display:none;">0</span>
+            </div>
+            <div class="nav-item" onclick="app.switchTab('notes', this)">
+                <span class="nav-icon">📓</span> Notlar
+            </div>
+            <div class="nav-item" onclick="app.switchTab('gpa', this)">
+                <span class="nav-icon">🎯</span> Not Hesapla
+            </div>
+            <div class="nav-item" onclick="app.switchTab('pomodoro', this)">
+                <span class="nav-icon">⏱️</span> Pomodoro
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <button class="theme-toggle" onclick="app.toggleTheme()">🌓 Tema Değiştir</button>
+            <button class="export-btn" onclick="app.exportData()">📥 Verileri İndir</button>
+            <label class="export-btn" style="cursor:pointer;">
+                📤 Verileri Yükle
+                <input type="file" accept=".json" onchange="app.importData(event)" style="display:none;">
+            </label>
+        </div>
+    </aside>
+
+    <button class="mobile-theme-toggle" onclick="app.toggleTheme()">🌓</button>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <main class="main-content">
+
+        <!-- DASHBOARD -->
+        <section id="dashboard" class="view active">
+            <div class="header">
+                <h1 id="dash-greeting">Merhaba! 👋</h1>
+                <p>Bugün günlerden <span id="dash-date" style="font-weight:700;"></span></p>
+            </div>
+
+            <div class="grid-4" id="dash-stats" style="margin-bottom: 1.5rem;"></div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h2>📅 Bugünün Dersleri</h2>
+                    <div id="dash-today-classes"></div>
+                </div>
+                <div class="card">
+                    <h2>🎯 Yaklaşan Görevler</h2>
+                    <div id="dash-upcoming-tasks"></div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 1.5rem;">
+                <h2>📊 Haftalık Ders Programı</h2>
+                <div style="overflow-x: auto;">
+                    <table class="schedule-table" id="dash-weekly-table"></table>
+                </div>
+            </div>
+        </section>
+
+        <!-- DERS PROGRAMI -->
+        <section id="schedule" class="view">
+            <div class="header">
+                <h1>Ders Programı</h1>
+                <p>Haftalık derslerini düzenle ve planla.</p>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <h2>➕ Yeni Ders Ekle</h2>
+                    <form id="form-class" onsubmit="app.addClass(event)">
+                        <div class="form-group">
+                            <label>Gün</label>
+                            <select id="class-day" required>
+                                <option value="Pazartesi">Pazartesi</option>
+                                <option value="Salı">Salı</option>
+                                <option value="Çarşamba">Çarşamba</option>
+                                <option value="Perşembe">Perşembe</option>
+                                <option value="Cuma">Cuma</option>
+                                <option value="Cumartesi">Cumartesi</option>
+                                <option value="Pazar">Pazar</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Ders Adı</label>
+                            <input type="text" id="class-name" placeholder="Örn: İleri Matematik" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Öğretmen / Hoca (Opsiyonel)</label>
+                            <input type="text" id="class-teacher" placeholder="Örn: Prof. Dr. Ahmet Yılmaz">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Başlangıç</label>
+                                <input type="time" id="class-start" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Bitiş</label>
+                                <input type="time" id="class-end" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Renk</label>
+                            <select id="class-color">
+                                <option value="var(--primary)">🟣 Mor</option>
+                                <option value="var(--secondary)">🟢 Yeşil</option>
+                                <option value="var(--danger)">🔴 Kırmızı</option>
+                                <option value="var(--warning)">🟡 Sarı</option>
+                                <option value="#3b82f6">🔵 Mavi</option>
+                                <option value="#ec4899">🩷 Pembe</option>
+                            </select>
+                        </div>
+                        <button type="submit" style="width: 100%;">➕ Dersi Ekle</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h2>📋 Ders Listesi</h2>
+                    <div class="form-group">
+                        <select id="filter-day" onchange="app.renderScheduleList()">
+                            <option value="Tümü">Tüm Günler</option>
+                            <option value="Pazartesi">Pazartesi</option>
+                            <option value="Salı">Salı</option>
+                            <option value="Çarşamba">Çarşamba</option>
+                            <option value="Perşembe">Perşembe</option>
+                            <option value="Cuma">Cuma</option>
+                            <option value="Cumartesi">Cumartesi</option>
+                            <option value="Pazar">Pazar</option>
+                        </select>
+                    </div>
+                    <div id="schedule-list" style="max-height: 450px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AJANDA -->
+        <section id="agenda" class="view">
+            <div class="header">
+                <h1>Ödev ve Sınav Takibi</h1>
+                <p>Tüm görevlerini organize et, hiçbir şeyi kaçırma.</p>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <h2>➕ Yeni Görev Ekle</h2>
+                    <form id="form-task" onsubmit="app.addTask(event)">
+                        <div class="form-group">
+                            <label>Tür</label>
+                            <select id="task-type" required>
+                                <option value="📝 Ödev">📝 Ödev</option>
+                                <option value="⚠️ Sınav">⚠️ Sınav</option>
+                                <option value="📌 Proje">📌 Proje</option>
+                                <option value="📖 Okuma">📖 Okuma</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Görev Adı</label>
+                            <input type="text" id="task-name" placeholder="Örn: Fizik Lab Raporu" required>
+                        </div>
+                        <div class="form-group">
+                            <label>İlgili Ders (Opsiyonel)</label>
+                            <input type="text" id="task-course" placeholder="Örn: Fizik 101">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Tarih</label>
+                                <input type="date" id="task-date" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Öncelik</label>
+                                <select id="task-priority">
+                                    <option value="normal">Normal</option>
+                                    <option value="high">🔥 Yüksek</option>
+                                    <option value="low">Düşük</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" style="width: 100%;">➕ Görevi Ekle</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h2>📋 Görev Listesi</h2>
+                    <div class="form-row" style="margin-bottom:1rem;">
+                        <div class="form-group" style="margin:0;">
+                            <select id="task-filter" onchange="app.renderTasksList()">
+                                <option value="all">Tümü</option>
+                                <option value="active">Aktif</option>
+                                <option value="completed">Tamamlananlar</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <select id="task-sort" onchange="app.renderTasksList()">
+                                <option value="date">Tarihe Göre</option>
+                                <option value="priority">Önceliğe Göre</option>
+                                <option value="type">Türe Göre</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="task-list" style="max-height: 400px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- NOTLAR -->
+        <section id="notes" class="view">
+            <div class="header">
+                <h1>Notlarım</h1>
+                <p>Ders notlarını ve fikirlerini organize et.</p>
+            </div>
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <form id="form-note" onsubmit="app.saveNote(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Başlık</label>
+                            <input type="text" id="note-title" placeholder="Örn: Tarih - 2. Ünite Özeti" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Kategori</label>
+                            <select id="note-category">
+                                <option value="📚 Ders Notu">📚 Ders Notu</option>
+                                <option value="💡 Fikir">💡 Fikir</option>
+                                <option value="📋 Özet">📋 Özet</option>
+                                <option value="🔬 Araştırma">🔬 Araştırma</option>
+                                <option value="📎 Diğer">📎 Diğer</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>İçerik</label>
+                        <textarea id="note-content" rows="5" placeholder="Notlarını buraya yaz..." required></textarea>
+                    </div>
+                    <button type="submit">💾 Notu Kaydet</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>📚 Kayıtlı Notlar</h2>
+                <div class="search-bar">
+                    <input type="text" id="note-search" placeholder="Notlarda ara..." oninput="app.renderNotesList()">
+                </div>
+                <div id="notes-list" class="grid-2"></div>
+            </div>
+        </section>
+
+        <!-- NOT HESAPLAMA -->
+        <section id="gpa" class="view">
+            <div class="header">
+                <h1>Not Ortalaması Hesapla</h1>
+                <p>Derslerinin ağırlıklı not ortalamasını hesapla.</p>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <h2>📝 Ders Notları</h2>
+                    <div id="gpa-courses"></div>
+                    <button type="button" onclick="app.addGPARow()" style="width:100%; margin-top:1rem;" class="btn-secondary">➕ Ders Ekle</button>
+                    <button type="button" onclick="app.calculateGPA()" style="width:100%; margin-top:0.5rem;">🧮 Hesapla</button>
+                </div>
+                <div class="card">
+                    <h2>📊 Sonuç</h2>
+                    <div class="gpa-display" id="gpa-result">—</div>
+                    <div id="gpa-details"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- POMODORO -->
+        <section id="pomodoro" class="view">
+            <div class="header">
+                <h1>Pomodoro Sayacı</h1>
+                <p>Verimli çalışma tekniği ile odaklan.</p>
+            </div>
+            <div class="card pomodoro-container">
+                <div class="timer-ring" id="timer-ring">
+                    <div class="timer-display" id="pomo-timer">25:00</div>
+                    <div class="timer-label" id="pomo-status">Odaklanma</div>
+                </div>
+                <div class="timer-controls">
+                    <button onclick="app.pomoStart()">▶️ Başlat</button>
+                    <button type="button" class="btn-danger" onclick="app.pomoPause()">⏸️ Duraklat</button>
+                    <button type="button" class="btn-secondary" onclick="app.pomoReset()">🔄 Sıfırla</button>
+                </div>
+                <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap;">
+                    <button type="button" class="btn-small" onclick="app.setPomoMode(25, 'Odaklanma')">25dk</button>
+                    <button type="button" class="btn-small btn-green" onclick="app.setPomoMode(5, 'Kısa Mola')">5dk</button>
+                    <button type="button" class="btn-small btn-green" onclick="app.setPomoMode(15, 'Uzun Mola')">15dk</button>
+                    <button type="button" class="btn-small" onclick="app.setPomoMode(50, 'Derin Odak')" style="background:var(--warning)">50dk</button>
+                </div>
+                <div class="pomo-stats">
+                    <div class="pomo-stat">
+                        <h4 id="pomo-sessions">0</h4>
+                        <p>Oturum</p>
+                    </div>
+                    <div class="pomo-stat">
+                        <h4 id="pomo-total-time">0dk</h4>
+                        <p>Toplam Çalışma</p>
+                    </div>
+                    <div class="pomo-stat">
+                        <h4 id="pomo-today-sessions">0</h4>
+                        <p>Bugünkü Oturum</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const app = {
+            data: {
+                theme: 'dark',
+                schedule: [],
+                tasks: [],
+                notes: [],
+                gpaRows: [],
+                pomoHistory: []
+            },
+
+            pomo: {
+                interval: null,
+                timeLeft: 25 * 60,
+                totalTime: 25 * 60,
+                isRunning: false,
+                mode: 25,
+                modeName: 'Odaklanma',
+                sessions: 0,
+                totalMinutes: 0,
+                todaySessions: 0,
+                todayDate: ''
+            },
+
+            // ═══════════════════════════════
+            // INIT & DATA
+            // ═══════════════════════════════
+            init() {
+                this.loadData();
+                this.applyTheme();
+                this.updateDateAndGreeting();
+                this.refreshAllViews();
+                this.updateTaskBadge();
+                this.initGPA();
+                this.loadPomoStats();
+
+                // Set default date for task
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('task-date').value = today;
+                document.getElementById('task-date').min = today;
+
+                setInterval(() => this.updateDateAndGreeting(), 60000);
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch(e.key) {
+                            case '1': e.preventDefault(); this.switchTabByIndex(0); break;
+                            case '2': e.preventDefault(); this.switchTabByIndex(1); break;
+                            case '3': e.preventDefault(); this.switchTabByIndex(2); break;
+                            case '4': e.preventDefault(); this.switchTabByIndex(3); break;
+                            case '5': e.preventDefault(); this.switchTabByIndex(4); break;
+                            case '6': e.preventDefault(); this.switchTabByIndex(5); break;
+                        }
+                    }
+                    // Space to start/pause pomodoro when on pomodoro tab
+                    if (e.code === 'Space' && document.getElementById('pomodoro').classList.contains('active')) {
+                        if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                            e.preventDefault();
+                            this.pomo.isRunning ? this.pomoPause() : this.pomoStart();
+                        }
+                    }
+                });
+            },
+
+            loadData() {
+                try {
+                    const saved = localStorage.getItem('OgrenciAsistaniData_v2');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        this.data = { ...this.data, ...parsed };
+                    }
+                } catch (e) {
+                    console.error("Veri yüklenirken hata:", e);
+                    this.showToast('Veri yükleme hatası!', 'error');
+                }
+            },
+
+            saveData() {
+                try {
+                    localStorage.setItem('OgrenciAsistaniData_v2', JSON.stringify(this.data));
+                } catch (e) {
+                    this.showToast('Veri kaydedilemedi!', 'error');
+                }
+            },
+
+            exportData() {
+                const blob = new Blob([JSON.stringify(this.data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ogrenci-asistani-yedek-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                this.showToast('Veriler indirildi!', 'success');
+            },
+
+            importData(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const imported = JSON.parse(e.target.result);
+                        this.data = { ...this.data, ...imported };
+                        this.saveData();
+                        this.refreshAllViews();
+                        this.showToast('Veriler başarıyla yüklendi!', 'success');
+                    } catch (err) {
+                        this.showToast('Geçersiz dosya formatı!', 'error');
+                    }
+                };
+                reader.readAsText(file);
+                event.target.value = '';
+            },
+
+            // ═══════════════════════════════
+            // UI MANAGEMENT
+            // ═══════════════════════════════
+            switchTab(tabId, el) {
+                document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+                if (el) el.classList.add('active');
+
+                document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
+                document.getElementById(tabId).classList.add('active');
+
+                if (tabId === 'dashboard') this.renderDashboard();
+            },
+
+            switchTabByIndex(index) {
+                const items = document.querySelectorAll('.nav-item');
+                if (items[index]) items[index].click();
+            },
+
+            toggleTheme() {
+                this.data.theme = this.data.theme === 'light' ? 'dark' : 'light';
+                this.applyTheme();
+                this.saveData();
+                this.showToast(this.data.theme === 'dark' ? '🌙 Karanlık tema aktif' : '☀️ Aydınlık tema aktif', 'info');
+            },
+
+            applyTheme() {
+                document.documentElement.setAttribute('data-theme', this.data.theme);
+            },
+
+            refreshAllViews() {
+                this.renderScheduleList();
+                this.renderTasksList();
+                this.renderNotesList();
+                this.renderDashboard();
+            },
+
+            showToast(message, type = 'info') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+                toast.innerHTML = `${icons[type] || ''} ${message}`;
+                container.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            },
+
+            confirm(message, onConfirm) {
+                const overlay = document.createElement('div');
+                overlay.className = 'modal-overlay';
+                overlay.innerHTML = `
+                    <div class="modal-box">
+                        <h3>⚠️ Emin misiniz?</h3>
+                        <p>${message}</p>
+                        <div class="modal-actions">
+                            <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">İptal</button>
+                            <button class="btn-danger" id="confirm-btn">Sil</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                overlay.querySelector('#confirm-btn').onclick = () => {
+                    onConfirm();
+                    overlay.remove();
+                };
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) overlay.remove();
+                });
+            },
+
+            // ═══════════════════════════════
+            // DASHBOARD
+            // ═══════════════════════════════
+            getDayName() {
+                const days = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+                return days[new Date().getDay()];
+            },
+
+            updateDateAndGreeting() {
+                const now = new Date();
+                const dayName = this.getDayName();
+                const dateStr = now.toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                document.getElementById('dash-date').innerText = `${dateStr}, ${dayName}`;
+
+                const hour = now.getHours();
+                let greeting = "İyi Günler! 👋";
+                if (hour < 6) greeting = "İyi Geceler! 🌙";
+                else if (hour < 12) greeting = "Günaydın! ☀️";
+                else if (hour < 18) greeting = "İyi Günler! 🌤️";
+                else greeting = "İyi Akşamlar! 🌙";
+                document.getElementById('dash-greeting').innerText = greeting;
+            },
+
+            renderDashboard() {
+                this.updateDateAndGreeting();
+                const todayName = this.getDayName();
+                const todayYMD = new Date().toISOString().split('T')[0];
+
+                // Stats
+                const todayClasses = this.data.schedule.filter(c => c.day === todayName);
+                const activeTasks = this.data.tasks.filter(t => !t.completed);
+                const overdueTasks = this.data.tasks.filter(t => !t.completed && t.date < todayYMD);
+                const totalNotes = this.data.notes.length;
+
+                document.getElementById('dash-stats').innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-icon blue">📅</div>
+                        <div class="stat-info">
+                            <h3>${todayClasses.length}</h3>
+                            <p>Bugünkü Ders</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon yellow">📝</div>
+                        <div class="stat-info">
+                            <h3>${activeTasks.length}</h3>
+                            <p>Aktif Görev</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">🔥</div>
+                        <div class="stat-info">
+                            <h3>${overdueTasks.length}</h3>
+                            <p>Geciken</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">📓</div>
+                        <div class="stat-info">
+                            <h3>${totalNotes}</h3>
+                            <p>Not</p>
+                        </div>
+                    </div>
+                `;
+
+                // Today's classes
+                const sortedClasses = todayClasses.sort((a, b) => a.start.localeCompare(b.start));
+                const todayDiv = document.getElementById('dash-today-classes');
+
+                if (sortedClasses.length === 0) {
+                    todayDiv.innerHTML = `<div class="empty-state"><div class="empty-icon">🎉</div><p>Bugün dersin yok!</p></div>`;
+                } else {
+                    const now = new Date();
+                    const currentTime = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+
+                    todayDiv.innerHTML = sortedClasses.map(c => {
+                        const isNow = currentTime >= c.start && currentTime <= c.end;
+                        const isPast = currentTime > c.end;
+                        return `
+                        <div class="list-item" style="border-left-color: ${c.color || 'var(--secondary)'}; ${isPast ? 'opacity:0.5;' : ''} ${isNow ? 'box-shadow: 0 0 0 2px var(--primary);' : ''}">
+                            <div class="list-item-content">
+                                <h4>${isNow ? '🔴 ' : ''}${c.name}</h4>
+                                <p>⏱️ ${c.start} - ${c.end} ${c.teacher ? '| 👤 ' + c.teacher : ''}</p>
+                                ${isNow ? '<p style="color:var(--primary);font-weight:600;font-size:0.8rem;">Şu an bu derstesin!</p>' : ''}
+                            </div>
+                        </div>`;
+                    }).join('');
+                }
+
+                // Upcoming tasks
+                const upcoming = this.data.tasks
+                    .filter(t => !t.completed && t.date >= todayYMD)
+                    .sort((a, b) => a.date.localeCompare(b.date))
+                    .slice(0, 5);
+
+                const upcomingDiv = document.getElementById('dash-upcoming-tasks');
+                if (upcoming.length === 0 && overdueTasks.length === 0) {
+                    upcomingDiv.innerHTML = `<div class="empty-state"><div class="empty-icon">✨</div><p>Yaklaşan görev yok!</p></div>`;
+                } else {
+                    let html = '';
+                    // Show overdue first
+                    overdueTasks.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3).forEach(t => {
+                        html += `
+                        <div class="list-item" style="border-left-color: var(--danger); background: var(--danger-light);">
+                            <div class="list-item-content">
+                                <h4>🚨 ${t.type} - ${t.name}</h4>
+                                <p style="color:var(--danger);font-weight:600;">GECİKMİŞ! ${new Date(t.date).toLocaleDateString('tr-TR')}</p>
+                            </div>
+                        </div>`;
+                    });
+                    upcoming.forEach(t => {
+                        const isToday = t.date === todayYMD;
+                        const daysLeft = Math.ceil((new Date(t.date) - new Date(todayYMD)) / 86400000);
+                        html += `
+                        <div class="list-item" style="border-left-color: ${isToday ? 'var(--danger)' : daysLeft <= 3 ? 'var(--warning)' : 'var(--primary)'}">
+                            <div class="list-item-content">
+                                <h4>${t.type} - ${t.name}</h4>
+                                <p>📅 ${isToday ? '<strong style="color:var(--danger)">BUGÜN!</strong>' : daysLeft + ' gün kaldı — ' + new Date(t.date).toLocaleDateString('tr-TR')}</p>
+                            </div>
+                        </div>`;
+                    });
+                    upcomingDiv.innerHTML = html;
+                }
+
+                // Weekly table
+                this.renderWeeklyTable();
+            },
+
+            renderWeeklyTable() {
+                const daysOrder = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+                const todayName = this.getDayName();
+                const table = document.getElementById('dash-weekly-table');
+
+                if (this.data.schedule.length === 0) {
+                    table.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted);">Henüz ders eklenmemiş.</td></tr>';
+                    return;
+                }
+
+                // Find all unique time slots
+                const timeSlots = new Set();
+                this.data.schedule.forEach(c => timeSlots.add(c.start));
+                const sortedTimes = [...timeSlots].sort();
+
+                let html = '<thead><tr><th>Saat</th>';
+                daysOrder.forEach(d => {
+                    html += `<th class="${d === todayName ? 'today-col' : ''}">${d.substring(0, 3)}</th>`;
+                });
+                html += '</tr></thead><tbody>';
+
+                sortedTimes.forEach(time => {
+                    html += `<tr><td style="font-weight:600;white-space:nowrap;">${time}</td>`;
+                    daysOrder.forEach(day => {
+                        const classes = this.data.schedule.filter(c => c.day === day && c.start === time);
+                        html += `<td class="${day === todayName ? 'today-col' : ''}">`;
+                        classes.forEach(c => {
+                            html += `<div class="class-cell" style="border-left-color:${c.color || 'var(--primary)'}">${c.name}<br><small>${c.start}-${c.end}</small></div>`;
+                        });
+                        html += '</td>';
+                    });
+                    html += '</tr>';
+                });
+
+                html += '</tbody>';
+                table.innerHTML = html;
+            },
+
+            // ═══════════════════════════════
+            // SCHEDULE
+            // ═══════════════════════════════
+            addClass(e) {
+                e.preventDefault();
+                const start = document.getElementById('class-start').value;
+                const end = document.getElementById('class-end').value;
+
+                if (start >= end) {
+                    this.showToast('Bitiş saati başlangıçtan sonra olmalı!', 'warning');
+                    return;
+                }
+
+                const newClass = {
+                    id: Date.now(),
+                    day: document.getElementById('class-day').value,
+                    name: document.getElementById('class-name').value.trim(),
+                    teacher: document.getElementById('class-teacher').value.trim(),
+                    start: start,
+                    end: end,
+                    color: document.getElementById('class-color').value
+                };
+
+                // Check for time conflicts
+                const conflict = this.data.schedule.find(c =>
+                    c.day === newClass.day &&
+                    ((newClass.start >= c.start && newClass.start < c.end) ||
+                     (newClass.end > c.start && newClass.end <= c.end) ||
+                     (newClass.start <= c.start && newClass.end >= c.end))
+                );
+
+                if (conflict) {
+                    this.showToast(`⚠️ "${conflict.name}" ile çakışma var!`, 'warning');
+                    return;
+                }
+
+                this.data.schedule.push(newClass);
+                this.saveData();
+                this.renderScheduleList();
+                this.renderDashboard();
+                e.target.reset();
+                this.showToast(`"${newClass.name}" eklendi!`, 'success');
+            },
+
+            deleteClass(id) {
+                const cls = this.data.schedule.find(c => c.id === id);
+                this.confirm(`"${cls?.name}" dersi silinecek.`, () => {
+                    this.data.schedule = this.data.schedule.filter(c => c.id !== id);
+                    this.saveData();
+                    this.renderScheduleList();
+                    this.renderDashboard();
+                    this.showToast('Ders silindi.', 'info');
+                });
+            },
+
+            renderScheduleList() {
+                const filterDay = document.getElementById('filter-day').value;
+                let filtered = this.data.schedule;
+
+                if (filterDay !== "Tümü") {
+                    filtered = filtered.filter(c => c.day === filterDay);
+                }
+
+                const daysOrder = { "Pazartesi": 1, "Salı": 2, "Çarşamba": 3, "Perşembe": 4, "Cuma": 5, "Cumartesi": 6, "Pazar": 7 };
+                filtered.sort((a, b) => {
+                    if (daysOrder[a.day] !== daysOrder[b.day]) return daysOrder[a.day] - daysOrder[b.day];
+                    return a.start.localeCompare(b.start);
+                });
+
+                const listDiv = document.getElementById('schedule-list');
+                if (filtered.length === 0) {
+                    listDiv.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><p>Ders bulunamadı.</p></div>`;
+                    return;
+                }
+
+                listDiv.innerHTML = filtered.map(c => `
+                    <div class="list-item" style="border-left-color: ${c.color || 'var(--primary)'}">
+                        <div class="list-item-content">
+                            <h4>${c.name} <span style="font-size:0.8em; color:var(--text-muted); font-weight:400;">(${c.day})</span></h4>
+                            <p>⏱️ ${c.start} - ${c.end} ${c.teacher ? '| 👤 ' + c.teacher : ''}</p>
+                        </div>
+                        <div class="list-item-actions">
+                            <button type="button" class="btn-danger btn-small" onclick="app.deleteClass(${c.id})">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            // ═══════════════════════════════
+            // TASKS (AGENDA)
+            // ═══════════════════════════════
+            addTask(e) {
+                e.preventDefault();
+                const newTask = {
+                    id: Date.now(),
+                    type: document.getElementById('task-type').value,
+                    name: document.getElementById('task-name').value.trim(),
+                    course: document.getElementById('task-course').value.trim(),
+                    date: document.getElementById('task-date').value,
+                    priority: document.getElementById('task-priority').value,
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                };
+                this.data.tasks.push(newTask);
+                this.saveData();
+                this.renderTasksList();
+                this.renderDashboard();
+                this.updateTaskBadge();
+                e.target.reset();
+                document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
+                this.showToast(`"${newTask.name}" eklendi!`, 'success');
+            },
+
+            toggleTask(id) {
+                const task = this.data.tasks.find(t => t.id === id);
+                if (task) {
+                    task.completed = !task.completed;
+                    this.saveData();
+                    this.renderTasksList();
+                    this.renderDashboard();
+                    this.updateTaskBadge();
+                    this.showToast(task.completed ? '✅ Tamamlandı!' : '🔄 Tekrar aktif.', 'info');
+                }
+            },
+
+            deleteTask(id) {
+                const task = this.data.tasks.find(t => t.id === id);
+                this.confirm(`"${task?.name}" silinecek.`, () => {
+                    this.data.tasks = this.data.tasks.filter(t => t.id !== id);
+                    this.saveData();
+                    this.renderTasksList();
+                    this.renderDashboard();
+                    this.updateTaskBadge();
+                    this.showToast('Görev silindi.', 'info');
+                });
+            },
+
+            updateTaskBadge() {
+                const todayYMD = new Date().toISOString().split('T')[0];
+                const active = this.data.tasks.filter(t => !t.completed && t.date >= todayYMD).length;
+                const overdue = this.data.tasks.filter(t => !t.completed && t.date < todayYMD).length;
+                const total = active + overdue;
+                const badge = document.getElementById('task-badge');
+                if (total > 0) {
+                    badge.style.display = 'inline';
+                    badge.textContent = total;
+                } else {
+                    badge.style.display = 'none';
+                }
+            },
+
+            renderTasksList() {
+                const filter = document.getElementById('task-filter').value;
+                const sort = document.getElementById('task-sort').value;
+                const todayYMD = new Date().toISOString().split('T')[0];
+
+                let tasks = [...this.data.tasks];
+
+                // Filter
+                if (filter === 'active') tasks = tasks.filter(t => !t.completed);
+                else if (filter === 'completed') tasks = tasks.filter(t => t.completed);
+
+                // Sort
+                const priorityOrder = { high: 0, normal: 1, low: 2 };
+                if (sort === 'date') tasks.sort((a, b) => a.date.localeCompare(b.date));
+                else if (sort === 'priority') tasks.sort((a, b) => (priorityOrder[a.priority] || 1) - (priorityOrder[b.priority] || 1));
+                else if (sort === 'type') tasks.sort((a, b) => a.type.localeCompare(b.type));
+
+                const listDiv = document.getElementById('task-list');
+
+                if (tasks.length === 0) {
+                    listDiv.innerHTML = `<div class="empty-state"><div class="empty-icon">📝</div><p>Görev bulunamadı.</p></div>`;
+                    return;
+                }
+
+                listDiv.innerHTML = tasks.map(t => {
+                    const isOverdue = !t.completed && t.date < todayYMD;
+                    const isToday = t.date === todayYMD;
+                    const daysLeft = Math.ceil((new Date(t.date) - new Date(todayYMD)) / 86400000);
+                    const borderColor = t.completed ? 'var(--secondary)' :
+                                       isOverdue ? 'var(--danger)' :
+                                       t.priority === 'high' ? 'var(--warning)' : 'var(--primary)';
+
+                    return `
+                    <div class="list-item ${t.completed ? 'completed' : ''}" style="border-left-color: ${borderColor}; ${isOverdue ? 'background:var(--danger-light);' : ''}">
+                        <div class="list-item-content" style="flex:1;">
+                            <h4>
+                                ${t.type} ${t.name}
+                                ${t.priority === 'high' ? '<span style="color:var(--danger);font-size:0.8em;">🔥</span>' : ''}
+                                ${isOverdue ? '<span style="color:var(--danger);font-size:0.8em;">GECİKMİŞ</span>' : ''}
+                            </h4>
+                            <p>
+                                📅 ${isToday && !t.completed ? '<strong style="color:var(--danger)">BUGÜN!</strong>' : new Date(t.date).toLocaleDateString('tr-TR')}
+                                ${!t.completed && !isOverdue && daysLeft > 0 ? ` (${daysLeft} gün)` : ''}
+                                ${t.course ? ' | 📚 ' + t.course : ''}
+                            </p>
+                        </div>
+                        <div class="list-item-actions">
+                            <button type="button" class="btn-small ${t.completed ? 'btn-secondary' : 'btn-green'}" onclick="app.toggleTask(${t.id})">${t.completed ? '↩️' : '✅'}</button>
+                            <button type="button" class="btn-danger btn-small" onclick="app.deleteTask(${t.id})">🗑️</button>
+                        </div>
+                    </div>`;
+                }).join('');
+            },
+
+            // ═══════════════════════════════
+            // NOTES
+            // ═══════════════════════════════
+            saveNote(e) {
+                e.preventDefault();
+                const newNote = {
+                    id: Date.now(),
+                    title: document.getElementById('note-title').value.trim(),
+                    category: document.getElementById('note-category').value,
+                    content: document.getElementById('note-content').value.trim(),
+                    date: new Date().toLocaleDateString('tr-TR'),
+                    updatedAt: new Date().toISOString()
+                };
+                this.data.notes.push(newNote);
+                this.saveData();
+                this.renderNotesList();
+                e.target.reset();
+                this.showToast('Not kaydedildi!', 'success');
+            },
+
+            deleteNote(id) {
+                const note = this.data.notes.find(n => n.id === id);
+                this.confirm(`"${note?.title}" notu silinecek.`, () => {
+                    this.data.notes = this.data.notes.filter(n => n.id !== id);
+                    this.saveData();
+                    this.renderNotesList();
+                    this.showToast('Not silindi.', 'info');
+                });
+            },
+
+            editNote(id) {
+                const note = this.data.notes.find(n => n.id === id);
+                if (!note) return;
+                document.getElementById('note-title').value = note.title;
+                document.getElementById('note-content').value = note.content;
+                if (note.category) document.getElementById('note-category').value = note.category;
+                
+                // Remove old and save as new
+                this.data.notes = this.data.notes.filter(n => n.id !== id);
+                this.saveData();
+                this.renderNotesList();
+                this.showToast('Not düzenleme modunda.', 'info');
+                // Scroll to form
+                document.getElementById('note-title').focus();
+            },
+
+            renderNotesList() {
+                const search = (document.getElementById('note-search')?.value || '').toLowerCase();
+                const listDiv = document.getElementById('notes-list');
+
+                let notes = [...this.data.notes].reverse();
+                if (search) {
+                    notes = notes.filter(n =>
+                        n.title.toLowerCase().includes(search) ||
+                        n.content.toLowerCase().includes(search) ||
+                        (n.category && n.category.toLowerCase().includes(search))
+                    );
+                }
+
+                if (notes.length === 0) {
+                    listDiv.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">📓</div><p>${search ? 'Arama sonucu bulunamadı.' : 'Henüz not eklenmemiş.'}</p></div>`;
+                    return;
+                }
+
+                listDiv.innerHTML = notes.map(n => `
+                    <div class="card" style="box-shadow:none; border-left: 4px solid var(--primary);">
+                        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px; gap:8px;">
+                            <div>
+                                <h4 style="color:var(--primary); margin:0; font-size:1rem;">${n.title}</h4>
+                                ${n.category ? `<span style="font-size:0.75rem; color:var(--text-muted);">${n.category}</span>` : ''}
+                            </div>
+                            <span style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">${n.date}</span>
+                        </div>
+                        <p style="white-space:pre-wrap; font-size:0.9rem; margin-bottom:12px; line-height:1.6; max-height:150px; overflow-y:auto;">${this.escapeHtml(n.content)}</p>
+                        <div style="display:flex; gap:6px;">
+                            <button type="button" class="btn-small btn-secondary" onclick="app.editNote(${n.id})">✏️ Düzenle</button>
+                            <button type="button" class="btn-danger btn-small" onclick="app.deleteNote(${n.id})">🗑️ Sil</button>
+                            <button type="button" class="btn-small btn-secondary" onclick="app.copyNote(${n.id})">📋 Kopyala</button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            copyNote(id) {
+                const note = this.data.notes.find(n => n.id === id);
+                if (note) {
+                    navigator.clipboard.writeText(`${note.title}\n\n${note.content}`).then(() => {
+                        this.showToast('Not panoya kopyalandı!', 'success');
+                    }).catch(() => {
+                        this.showToast('Kopyalama başarısız.', 'error');
+                    });
+                }
+            },
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            },
+
+            // ═══════════════════════════════
+            // GPA CALCULATOR
+            // ═══════════════════════════════
+            initGPA() {
+                if (this.data.gpaRows.length === 0) {
+                    this.data.gpaRows = [
+                        { name: '', credit: '', grade: '' },
+                        { name: '', credit: '', grade: '' },
+                        { name: '', credit: '', grade: '' }
+                    ];
+                }
+                this.renderGPARows();
+            },
+
+            addGPARow() {
+                this.data.gpaRows.push({ name: '', credit: '', grade: '' });
+                this.renderGPARows();
+            },
+
+            removeGPARow(index) {
+                if (this.data.gpaRows.length <= 1) return;
+                this.data.gpaRows.splice(index, 1);
+                this.renderGPARows();
+            },
+
+            renderGPARows() {
+                const container = document.getElementById('gpa-courses');
+                container.innerHTML = this.data.gpaRows.map((row, i) => `
+                    <div class="grade-row">
+                        <input type="text" placeholder="Ders adı" value="${row.name}" onchange="app.data.gpaRows[${i}].name=this.value" style="flex:2;">
+                        <input type="number" placeholder="Kredi" min="1" max="10" value="${row.credit}" onchange="app.data.gpaRows[${i}].credit=this.value" style="flex:0.7;">
+                        <select onchange="app.data.gpaRows[${i}].grade=this.value" style="flex:1;">
+                            <option value="">Not</option>
+                            <option value="4.0" ${row.grade === '4.0' ? 'selected' : ''}>AA (4.0)</option>
+                            <option value="3.5" ${row.grade === '3.5' ? 'selected' : ''}>BA (3.5)</option>
+                            <option value="3.0" ${row.grade === '3.0' ? 'selected' : ''}>BB (3.0)</option>
+                            <option value="2.5" ${row.grade === '2.5' ? 'selected' : ''}>CB (2.5)</option>
+                            <option value="2.0" ${row.grade === '2.0' ? 'selected' : ''}>CC (2.0)</option>
+                            <option value="1.5" ${row.grade === '1.5' ? 'selected' : ''}>DC (1.5)</option>
+                            <option value="1.0" ${row.grade === '1.0' ? 'selected' : ''}>DD (1.0)</option>
+                            <option value="0.0" ${row.grade === '0.0' ? 'selected' : ''}>FF (0.0)</option>
+                        </select>
+                        <button type="button" class="btn-danger btn-small" onclick="app.removeGPARow(${i})" ${this.data.gpaRows.length <= 1 ? 'disabled' : ''}>✕</button>
+                    </div>
+                `).join('');
+            },
+
+            calculateGPA() {
+                let totalCredits = 0;
+                let totalPoints = 0;
+                let details = [];
+
+                this.data.gpaRows.forEach(row => {
+                    if (row.credit && row.grade !== '') {
+                        const credit = parseFloat(row.credit);
+                        const grade = parseFloat(row.grade);
+                        totalCredits += credit;
+                        totalPoints += credit * grade;
+                        details.push({ name: row.name || 'İsimsiz', credit, grade });
+                    }
+                });
+
+                if (totalCredits === 0) {
+                    this.showToast('Lütfen en az bir ders için kredi ve not girin.', 'warning');
+                    return;
+                }
+
+                const gpa = totalPoints / totalCredits;
+                const resultDiv = document.getElementById('gpa-result');
+                const detailsDiv = document.getElementById('gpa-details');
+
+                let gpaClass = 'gpa-low';
+                let gpaLabel = 'Yetersiz';
+                if (gpa >= 3.5) { gpaClass = 'gpa-excellent'; gpaLabel = 'Pekiyi'; }
+                else if (gpa >= 3.0) { gpaClass = 'gpa-good'; gpaLabel = 'İyi'; }
+                else if (gpa >= 2.0) { gpaClass = 'gpa-average'; gpaLabel = 'Orta'; }
+
+                resultDiv.className = `gpa-display ${gpaClass}`;
+                resultDiv.innerHTML = `${gpa.toFixed(2)} <span style="font-size:1rem;display:block;">${gpaLabel}</span>`;
+
+                detailsDiv.innerHTML = `
+                    <div style="margin-top:1rem;">
+                        <p style="color:var(--text-muted);margin-bottom:0.5rem;">Toplam Kredi: <strong>${totalCredits}</strong></p>
+                        <p style="color:var(--text-muted);margin-bottom:1rem;">Toplam Puan: <strong>${totalPoints.toFixed(1)}</strong></p>
+                        ${details.map(d => `
+                            <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:0.9rem;">
+                                <span>${d.name}</span>
+                                <span>${d.credit} kredi × ${d.grade.toFixed(1)} = <strong>${(d.credit * d.grade).toFixed(1)}</strong></span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                this.saveData();
+                this.showToast(`GPA: ${gpa.toFixed(2)} (${gpaLabel})`, 'success');
+            },
+
+            // ═══════════════════════════════
+            // POMODORO
+            // ═══════════════════════════════
+            loadPomoStats() {
+                try {
+                    const stats = localStorage.getItem('PomoStats');
+                    if (stats) {
+                        const parsed = JSON.parse(stats);
+                        this.pomo.sessions = parsed.sessions || 0;
+                        this.pomo.totalMinutes = parsed.totalMinutes || 0;
+                        this.pomo.todaySessions = parsed.todaySessions || 0;
+                        this.pomo.todayDate = parsed.todayDate || '';
+                    }
+                    // Reset today count if new day
+                    const today = new Date().toISOString().split('T')[0];
+                    if (this.pomo.todayDate !== today) {
+                        this.pomo.todaySessions = 0;
+                        this.pomo.todayDate = today;
+                    }
+                    this.updatePomoStats();
+                } catch (e) {}
+            },
+
+            savePomoStats() {
+                localStorage.setItem('PomoStats', JSON.stringify({
+                    sessions: this.pomo.sessions,
+                    totalMinutes: this.pomo.totalMinutes,
+                    todaySessions: this.pomo.todaySessions,
+                    todayDate: this.pomo.todayDate
+                }));
+            },
+
+            updatePomoStats() {
+                document.getElementById('pomo-sessions').textContent = this.pomo.sessions;
+                document.getElementById('pomo-total-time').textContent =
+                    this.pomo.totalMinutes >= 60
+                        ? `${Math.floor(this.pomo.totalMinutes / 60)}s ${this.pomo.totalMinutes % 60}dk`
+                        : `${this.pomo.totalMinutes}dk`;
+                document.getElementById('pomo-today-sessions').textContent = this.pomo.todaySessions;
+            },
+
+            updatePomoDisplay() {
+                const minutes = Math.floor(this.pomo.timeLeft / 60);
+                const seconds = this.pomo.timeLeft % 60;
+                const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                document.getElementById('pomo-timer').innerText = display;
+                document.title = this.pomo.isRunning ? `${display} - ${this.pomo.modeName}` : 'Öğrenci Asistanı';
+            },
+
+            pomoStart() {
+                if (this.pomo.isRunning) return;
+                this.pomo.isRunning = true;
+                const ring = document.getElementById('timer-ring');
+                ring.classList.add('running');
+                if (this.pomo.modeName !== 'Odaklanma' && this.pomo.modeName !== 'Derin Odak') {
+                    ring.classList.add('break-mode');
+                }
+
+                this.pomo.interval = setInterval(() => {
+                    if (this.pomo.timeLeft > 0) {
+                        this.pomo.timeLeft--;
+                        this.updatePomoDisplay();
+                    } else {
+                        this.pomoPause();
+                        // Track completed session
+                        if (this.pomo.modeName === 'Odaklanma' || this.pomo.modeName === 'Derin Odak') {
+                            this.pomo.sessions++;
+                            this.pomo.totalMinutes += this.pomo.mode;
+                            this.pomo.todaySessions++;
+                            this.pomo.todayDate = new Date().toISOString().split('T')[0];
+                            this.savePomoStats();
+                            this.updatePomoStats();
+                        }
+
+                        // Notification
+                        this.showToast(
+                            this.pomo.modeName === 'Odaklanma' || this.pomo.modeName === 'Derin Odak'
+                                ? '🎉 Çalışma bitti! Mola zamanı.'
+                                : '⏰ Mola bitti! Çalışma zamanı.',
+                            'success'
+                        );
+
+                        // Try browser notification
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            new Notification('Pomodoro', {
+                                body: this.pomo.modeName === 'Odaklanma' ? 'Çalışma süresi bitti!' : 'Mola bitti!',
+                                icon: '⏱️'
+                            });
+                        }
+
+                        // Play sound (beep)
+                        try {
+                            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                            const osc = ctx.createOscillator();
+                            const gain = ctx.createGain();
+                            osc.connect(gain);
+                            gain.connect(ctx.destination);
+                            osc.frequency.value = 800;
+                            gain.gain.value = 0.3;
+                            osc.start();
+                            setTimeout(() => { osc.stop(); ctx.close(); }, 500);
+                        } catch (e) {}
+                    }
+                }, 1000);
+
+                // Request notification permission
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            },
+
+            pomoPause() {
+                this.pomo.isRunning = false;
+                clearInterval(this.pomo.interval);
+                document.getElementById('timer-ring').classList.remove('running');
+                this.updatePomoDisplay();
+            },
+
+            pomoReset() {
+                this.pomoPause();
+                this.pomo.timeLeft = this.pomo.mode * 60;
+                this.pomo.totalTime = this.pomo.mode * 60;
+                document.getElementById('timer-ring').classList.remove('break-mode');
+                this.updatePomoDisplay();
+            },
+
+            setPomoMode(minutes, name) {
+                this.pomo.mode = minutes;
+                this.pomo.modeName = name;
+                document.getElementById('pomo-status').innerText = name;
+                this.pomoReset();
+                
+                const ring = document.getElementById('timer-ring');
+                ring.classList.remove('break-mode');
+                if (name === 'Kısa Mola' || name === 'Uzun Mola') {
+                    ring.classList.add('break-mode');
+                }
+            }
+        };
+
+        window.onload = () => app.init();
+    </script>
+</body>
+</html>
