@@ -26,6 +26,8 @@
             --radius: 12px;
             --radius-sm: 8px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --glass: rgba(255,255,255,0.7);
+            --glass-border: rgba(255,255,255,0.3);
         }
 
         [data-theme="dark"] {
@@ -41,6 +43,8 @@
             --border: #334155;
             --shadow: 0 4px 6px -1px rgba(0,0,0,0.4);
             --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4);
+            --glass: rgba(30,41,59,0.8);
+            --glass-border: rgba(51,65,85,0.5);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -92,6 +96,12 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 1.3rem; color: white;
             box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4); }
+            50% { box-shadow: 0 4px 20px rgba(79, 70, 229, 0.6); }
         }
 
         .nav-items { flex: 1; display: flex; flex-direction: column; gap: 4px; }
@@ -104,6 +114,17 @@
             color: var(--text-muted);
             transition: var(--transition);
             user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
         }
         .nav-item:hover { background-color: var(--primary-light); color: var(--text-main); transform: translateX(4px); }
         .nav-item.active {
@@ -111,6 +132,7 @@
             color: white;
             box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
         }
+        .nav-item.active::before { opacity: 1; }
         .nav-item .nav-icon {
             width: 28px; height: 28px;
             display: flex; align-items: center; justify-content: center;
@@ -122,6 +144,11 @@
             font-size: 0.7rem; font-weight: 700;
             padding: 2px 7px; border-radius: 10px;
             min-width: 20px; text-align: center;
+            animation: badgePulse 2s ease-in-out infinite;
+        }
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
         .nav-item.active .nav-badge { background: rgba(255,255,255,0.3); }
 
@@ -205,20 +232,42 @@
             box-shadow: var(--shadow);
             display: flex; align-items: center; gap: 1rem;
             transition: var(--transition);
+            cursor: pointer;
         }
-        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
         .stat-icon {
             width: 48px; height: 48px;
             border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
             font-size: 1.4rem; flex-shrink: 0;
+            transition: var(--transition);
         }
+        .stat-card:hover .stat-icon { transform: scale(1.1); }
         .stat-icon.blue { background: var(--primary-light); }
         .stat-icon.green { background: var(--secondary-light); }
         .stat-icon.red { background: var(--danger-light); }
         .stat-icon.yellow { background: var(--warning-light); }
         .stat-info h3 { font-size: 1.6rem; font-weight: 800; line-height: 1; }
         .stat-info p { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(90deg, var(--primary), #7c3aed);
+        }
+        .progress-fill.green { background: linear-gradient(90deg, var(--secondary), #059669); }
+        .progress-fill.red { background: linear-gradient(90deg, var(--danger), #dc2626); }
+        .progress-fill.yellow { background: linear-gradient(90deg, var(--warning), #d97706); }
 
         /* Forms */
         .form-group { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
@@ -287,10 +336,26 @@
             background: var(--bg-color);
             border: 6px solid var(--border);
             transition: var(--transition);
+            position: relative;
+        }
+        .timer-ring::after {
+            content: '';
+            position: absolute;
+            top: -3px; left: -3px; right: -3px; bottom: -3px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            transition: var(--transition);
         }
         .timer-ring.running { border-color: var(--primary); box-shadow: 0 0 30px var(--primary-light); }
+        .timer-ring.running::after { border-top-color: var(--primary); animation: timerSpin 2s linear infinite; }
         .timer-ring.break-mode { border-color: var(--secondary); box-shadow: 0 0 30px var(--secondary-light); }
+        .timer-ring.break-mode::after { border-top-color: var(--secondary); }
         .timer-ring.break-mode .timer-display { color: var(--secondary); }
+
+        @keyframes timerSpin {
+            to { transform: rotate(360deg); }
+        }
+
         .timer-display {
             font-size: 4rem; font-weight: 800;
             font-variant-numeric: tabular-nums;
@@ -313,6 +378,34 @@
         .pomo-stat h4 { font-size: 1.5rem; color: var(--primary); }
         .pomo-stat p { font-size: 0.8rem; color: var(--text-muted); }
 
+        /* Streak Display */
+        .streak-display {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: var(--bg-color);
+            border-radius: var(--radius-sm);
+        }
+        .streak-dot {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.65rem; font-weight: 700;
+            border: 2px solid var(--border);
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+        .streak-dot.active {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            border-color: var(--primary);
+            color: white;
+        }
+        .streak-dot.today {
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
         /* Search */
         .search-bar { position: relative; margin-bottom: 1rem; }
         .search-bar input { padding-left: 2.5rem; }
@@ -331,6 +424,7 @@
             animation: slideInRight 0.4s ease, fadeOutRight 0.4s ease 2.5s forwards;
             display: flex; align-items: center; gap: 8px;
             max-width: 350px;
+            backdrop-filter: blur(10px);
         }
         .toast.success { background: linear-gradient(135deg, var(--secondary), #059669); }
         .toast.error { background: linear-gradient(135deg, var(--danger), #dc2626); }
@@ -360,6 +454,12 @@
             padding: 4px 6px; margin: 2px 0;
             font-weight: 600; font-size: 0.75rem;
             border-left: 3px solid var(--primary);
+            cursor: default;
+            transition: var(--transition);
+        }
+        .schedule-table .class-cell:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow);
         }
         .schedule-table .today-col { background: var(--primary-light); }
 
@@ -374,8 +474,13 @@
         .modal-box {
             background: var(--card-bg); border: 1px solid var(--border);
             border-radius: var(--radius); padding: 2rem;
-            max-width: 400px; width: 90%;
+            max-width: 500px; width: 90%;
             box-shadow: var(--shadow-lg); text-align: center;
+            animation: modalSlideUp 0.3s ease;
+        }
+        @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .modal-box h3 { margin-bottom: 0.5rem; font-size: 1.2rem; }
         .modal-box p { color: var(--text-muted); margin-bottom: 1.5rem; }
@@ -387,6 +492,7 @@
             text-align: center; padding: 1.5rem;
             border-radius: var(--radius); background: var(--bg-color);
             margin-bottom: 1rem;
+            transition: var(--transition);
         }
         .gpa-excellent { color: var(--secondary); }
         .gpa-good { color: var(--primary); }
@@ -396,8 +502,200 @@
             display: flex; gap: 0.5rem; align-items: center;
             margin-bottom: 0.5rem; padding: 0.5rem;
             background: var(--bg-color); border-radius: var(--radius-sm);
+            transition: var(--transition);
         }
+        .grade-row:hover { box-shadow: var(--shadow); }
         .grade-row input, .grade-row select { margin: 0; }
+
+        /* Habits Section */
+        .habit-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+        .habit-card {
+            background: var(--bg-color);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+            border-left: 4px solid var(--primary);
+            transition: var(--transition);
+        }
+        .habit-card:hover { transform: translateX(4px); }
+        .habit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .habit-header h4 { font-weight: 600; }
+        .habit-streak {
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: 700;
+        }
+        .habit-days {
+            display: flex;
+            gap: 4px;
+            margin-top: 0.5rem;
+        }
+        .habit-day {
+            width: 28px; height: 28px;
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.65rem; font-weight: 600;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-muted);
+        }
+        .habit-day:hover { border-color: var(--primary); }
+        .habit-day.checked {
+            background: linear-gradient(135deg, var(--primary), #7c3aed);
+            color: white;
+            border-color: var(--primary);
+        }
+        .habit-day.today {
+            box-shadow: 0 0 0 2px var(--primary-light);
+        }
+
+        /* Flashcards */
+        .flashcard-container {
+            perspective: 1000px;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .flashcard {
+            width: 100%;
+            min-height: 250px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        .flashcard.flipped { transform: rotateY(180deg); }
+        .flashcard-face {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            backface-visibility: hidden;
+            border-radius: var(--radius);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 2rem;
+            text-align: center;
+            border: 2px solid var(--border);
+            background: var(--bg-color);
+        }
+        .flashcard-front {
+            background: linear-gradient(135deg, var(--primary-light), var(--bg-color));
+        }
+        .flashcard-back {
+            transform: rotateY(180deg);
+            background: linear-gradient(135deg, var(--secondary-light), var(--bg-color));
+        }
+        .flashcard-face h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+        .flashcard-face p {
+            font-size: 1rem;
+            color: var(--text-muted);
+        }
+        .flashcard-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 1rem;
+            opacity: 0.7;
+        }
+        .flashcard-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .flashcard-counter {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        /* Calendar Heatmap */
+        .heatmap {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+            max-width: 300px;
+        }
+        .heatmap-cell {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 3px;
+            background: var(--border);
+            transition: var(--transition);
+        }
+        .heatmap-cell.level-1 { background: rgba(79, 70, 229, 0.2); }
+        .heatmap-cell.level-2 { background: rgba(79, 70, 229, 0.4); }
+        .heatmap-cell.level-3 { background: rgba(79, 70, 229, 0.6); }
+        .heatmap-cell.level-4 { background: rgba(79, 70, 229, 0.8); }
+
+        /* Motivational Quote */
+        .quote-card {
+            background: linear-gradient(135deg, var(--primary-light), var(--secondary-light));
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+            text-align: center;
+            font-style: italic;
+            color: var(--text-main);
+            position: relative;
+            overflow: hidden;
+        }
+        .quote-card::before {
+            content: '"';
+            font-size: 5rem;
+            position: absolute;
+            top: -10px; left: 15px;
+            opacity: 0.1;
+            font-style: normal;
+            font-weight: 800;
+        }
+        .quote-card .quote-text {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            margin-bottom: 0.5rem;
+        }
+        .quote-card .quote-author {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-style: normal;
+            font-weight: 600;
+        }
+
+        /* Study Log */
+        .study-log-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-color);
+            border-radius: var(--radius-sm);
+            margin-bottom: 0.5rem;
+        }
+        .study-log-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--primary);
+            flex-shrink: 0;
+        }
+        .study-log-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            white-space: nowrap;
+        }
 
         /* ══════════ MOBİL FAB MENÜ ══════════ */
         .mobile-fab {
@@ -449,7 +747,6 @@
             align-items: center;
             gap: 10px;
             cursor: pointer;
-            animation: none;
         }
         .fab-item-label {
             background: var(--card-bg);
@@ -485,6 +782,35 @@
         }
         .fab-backdrop.show { display: block; }
 
+        /* Drag indicator */
+        .drag-handle {
+            cursor: grab;
+            opacity: 0.4;
+            transition: opacity 0.2s;
+            font-size: 1rem;
+        }
+        .drag-handle:hover { opacity: 1; }
+        .dragging { opacity: 0.5; transform: scale(0.98); }
+
+        /* Konfetti */
+        .confetti-container {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 99999;
+            overflow: hidden;
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 10px; height: 10px;
+            top: -10px;
+            animation: confettiFall 3s ease-in forwards;
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
         /* ══════════ MOBİL RESPONSIVE ══════════ */
         @media (max-width: 768px) {
             body { flex-direction: column; }
@@ -516,7 +842,6 @@
             .nav-item .nav-icon { width: 22px; height: 22px; font-size: 0.95rem; }
             .nav-badge { font-size: 0.65rem; padding: 1px 5px; }
 
-            /* ★ Sidebar footer GİZLE, FAB GÖSTER */
             .sidebar-footer { display: none !important; }
             .mobile-fab { display: flex !important; }
 
@@ -538,6 +863,10 @@
 
             .grade-row { flex-wrap: wrap; }
             .grade-row input, .grade-row select { font-size: 0.85rem; padding: 0.6rem; }
+
+            .flashcard-container { max-width: 100%; }
+            .flashcard { min-height: 200px; }
+            .habit-grid { grid-template-columns: 1fr; }
         }
 
         @media print {
@@ -571,6 +900,12 @@
             <div class="nav-item" onclick="app.switchTab('notes', this)">
                 <span class="nav-icon">📓</span> Notlar
             </div>
+            <div class="nav-item" onclick="app.switchTab('flashcards', this)">
+                <span class="nav-icon">🃏</span> Kartlar
+            </div>
+            <div class="nav-item" onclick="app.switchTab('habits', this)">
+                <span class="nav-icon">🔥</span> Alışkanlıklar
+            </div>
             <div class="nav-item" onclick="app.switchTab('gpa', this)">
                 <span class="nav-icon">🎯</span> Not Hesapla
             </div>
@@ -579,7 +914,6 @@
             </div>
         </div>
 
-        <!-- DESKTOP: Sidebar Alt Butonlar -->
         <div class="sidebar-footer">
             <button class="theme-toggle" onclick="app.toggleTheme()">🌓 Tema Değiştir</button>
             <button class="export-btn" onclick="app.exportData()">📥 Verileri İndir</button>
@@ -623,6 +957,7 @@
                 <h1 id="dash-greeting">Merhaba! 👋</h1>
                 <p>Bugün günlerden <span id="dash-date" style="font-weight:700;"></span></p>
             </div>
+            <div class="quote-card" id="daily-quote"></div>
             <div class="grid-4" id="dash-stats" style="margin-bottom:1.5rem;"></div>
             <div class="grid-2">
                 <div class="card">
@@ -634,10 +969,16 @@
                     <div id="dash-upcoming-tasks"></div>
                 </div>
             </div>
-            <div class="card" style="margin-top:1.5rem;">
-                <h2>📊 Haftalık Ders Programı</h2>
-                <div style="overflow-x:auto;">
-                    <table class="schedule-table" id="dash-weekly-table"></table>
+            <div class="grid-2" style="margin-top:1.5rem;">
+                <div class="card">
+                    <h2>📊 Haftalık Ders Programı</h2>
+                    <div style="overflow-x:auto;">
+                        <table class="schedule-table" id="dash-weekly-table"></table>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>📈 Çalışma Özeti</h2>
+                    <div id="dash-study-summary"></div>
                 </div>
             </div>
         </section>
@@ -734,6 +1075,10 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="form-group">
+                            <label>Açıklama (Opsiyonel)</label>
+                            <textarea id="task-desc" rows="2" placeholder="Detaylar..."></textarea>
+                        </div>
                         <button type="submit" style="width:100%;">➕ Görevi Ekle</button>
                     </form>
                 </div>
@@ -752,6 +1097,9 @@
                         </div>
                     </div>
                     <div id="task-list" style="max-height:400px; overflow-y:auto;"></div>
+                    <div style="margin-top:1rem; display:flex; gap:0.5rem;">
+                        <button type="button" class="btn-small btn-secondary" onclick="app.clearCompletedTasks()">🧹 Tamamlananları Temizle</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -775,14 +1123,112 @@
                             </select>
                         </div>
                     </div>
-                    <div class="form-group"><label>İçerik</label><textarea id="note-content" rows="5" placeholder="Notlarını buraya yaz..." required></textarea></div>
+                    <div class="form-group">
+                        <label>Etiketler (virgülle ayır)</label>
+                        <input type="text" id="note-tags" placeholder="Örn: matematik, integral, formüller">
+                    </div>
+                    <div class="form-group"><label>İçerik</label><textarea id="note-content" rows="5" placeholder="Notlarını buraya yaz... (Markdown desteklenir: **kalın**, *italik*, - liste)" required></textarea></div>
                     <button type="submit">💾 Notu Kaydet</button>
                 </form>
             </div>
             <div class="card">
-                <h2>📚 Kayıtlı Notlar</h2>
-                <div class="search-bar"><input type="text" id="note-search" placeholder="Notlarda ara..." oninput="app.renderNotesList()"></div>
+                <h2>📚 Kayıtlı Notlar (<span id="notes-count">0</span>)</h2>
+                <div class="search-bar"><input type="text" id="note-search" placeholder="Notlarda veya etiketlerde ara..." oninput="app.renderNotesList()"></div>
+                <div class="form-group" style="margin-bottom:1rem;">
+                    <select id="note-filter-category" onchange="app.renderNotesList()">
+                        <option value="all">Tüm Kategoriler</option>
+                        <option value="📚 Ders Notu">📚 Ders Notu</option>
+                        <option value="💡 Fikir">💡 Fikir</option>
+                        <option value="📋 Özet">📋 Özet</option>
+                        <option value="🔬 Araştırma">🔬 Araştırma</option>
+                        <option value="📎 Diğer">📎 Diğer</option>
+                    </select>
+                </div>
                 <div id="notes-list" class="grid-2"></div>
+            </div>
+        </section>
+
+        <!-- FLASHCARDS -->
+        <section id="flashcards" class="view">
+            <div class="header">
+                <h1>Çalışma Kartları</h1>
+                <p>Soru-cevap kartlarıyla çalış.</p>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <h2>➕ Yeni Kart Ekle</h2>
+                    <form id="form-flashcard" onsubmit="app.addFlashcard(event)">
+                        <div class="form-group">
+                            <label>Deste</label>
+                            <input type="text" id="fc-deck" placeholder="Örn: Biyoloji Bölüm 3" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Soru (Ön Yüz)</label>
+                            <textarea id="fc-front" rows="3" placeholder="Soruyu yaz..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Cevap (Arka Yüz)</label>
+                            <textarea id="fc-back" rows="3" placeholder="Cevabı yaz..." required></textarea>
+                        </div>
+                        <button type="submit" style="width:100%;">➕ Kart Ekle</button>
+                    </form>
+                    <div style="margin-top:1rem;">
+                        <h3 style="font-size:0.9rem; margin-bottom:0.5rem; color:var(--text-muted);">Desteler</h3>
+                        <div id="fc-deck-list"></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>🃏 Kart Çalışma</h2>
+                    <div class="form-group">
+                        <select id="fc-study-deck" onchange="app.startFlashcardStudy()">
+                            <option value="">Deste Seçin</option>
+                        </select>
+                    </div>
+                    <div id="fc-study-area">
+                        <div class="empty-state">
+                            <div class="empty-icon">🃏</div>
+                            <p>Çalışmak için bir deste seçin veya yeni kartlar ekleyin.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- HABITS -->
+        <section id="habits" class="view">
+            <div class="header">
+                <h1>Alışkanlık Takipçisi 🔥</h1>
+                <p>Günlük alışkanlıklarını takip et ve seri oluştur.</p>
+            </div>
+            <div class="card" style="margin-bottom:1.5rem;">
+                <form id="form-habit" onsubmit="app.addHabit(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Alışkanlık Adı</label>
+                            <input type="text" id="habit-name" placeholder="Örn: 30 dakika kitap oku" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Simge</label>
+                            <select id="habit-icon">
+                                <option value="📖">📖 Okuma</option>
+                                <option value="💪">💪 Spor</option>
+                                <option value="🧘">🧘 Meditasyon</option>
+                                <option value="💧">💧 Su İçme</option>
+                                <option value="📝">📝 Yazma</option>
+                                <option value="🎵">🎵 Müzik</option>
+                                <option value="🌅">🌅 Erken Kalkma</option>
+                                <option value="📚">📚 Çalışma</option>
+                                <option value="🧠">🧠 Beyin Egzersizi</option>
+                                <option value="🍎">🍎 Sağlıklı Beslenme</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" style="width:100%;">➕ Alışkanlık Ekle</button>
+                </form>
+            </div>
+            <div class="card">
+                <h2>📋 Alışkanlıklarım</h2>
+                <div id="habits-list" class="habit-grid"></div>
             </div>
         </section>
 
@@ -803,6 +1249,7 @@
                     <h2>📊 Sonuç</h2>
                     <div class="gpa-display" id="gpa-result">—</div>
                     <div id="gpa-details"></div>
+                    <div id="gpa-chart" style="margin-top:1rem;"></div>
                 </div>
             </div>
         </section>
@@ -829,10 +1276,19 @@
                     <button type="button" class="btn-small btn-green" onclick="app.setPomoMode(15,'Uzun Mola')">15dk</button>
                     <button type="button" class="btn-small" onclick="app.setPomoMode(50,'Derin Odak')" style="background:var(--warning)">50dk</button>
                 </div>
+                <div class="form-group" style="max-width:300px;margin:1.5rem auto 0;">
+                    <label>Çalışma Konusu</label>
+                    <input type="text" id="pomo-subject" placeholder="Ne üzerinde çalışıyorsun?">
+                </div>
                 <div class="pomo-stats">
                     <div class="pomo-stat"><h4 id="pomo-sessions">0</h4><p>Oturum</p></div>
                     <div class="pomo-stat"><h4 id="pomo-total-time">0dk</h4><p>Toplam</p></div>
                     <div class="pomo-stat"><h4 id="pomo-today-sessions">0</h4><p>Bugün</p></div>
+                </div>
+                <div class="streak-display" id="pomo-streak"></div>
+                <div class="card" style="margin-top:1.5rem;text-align:left;">
+                    <h2>📋 Bugünün Çalışma Günlüğü</h2>
+                    <div id="pomo-log"></div>
                 </div>
             </div>
         </section>
@@ -846,7 +1302,11 @@
                 schedule: [],
                 tasks: [],
                 notes: [],
-                gpaRows: []
+                gpaRows: [],
+                flashcards: [],
+                habits: [],
+                studyLog: [],
+                completedDates: {}
             },
 
             pomo: {
@@ -859,10 +1319,35 @@
                 sessions: 0,
                 totalMinutes: 0,
                 todaySessions: 0,
-                todayDate: ''
+                todayDate: '',
+                weekSessions: {}
+            },
+
+            fc: {
+                currentDeck: '',
+                currentIndex: 0,
+                studyCards: []
             },
 
             fabOpen: false,
+
+            quotes: [
+                { text: "Eğitim en güçlü silahınızdır, dünyayı değiştirmek için kullanabilirsiniz.", author: "Nelson Mandela" },
+                { text: "Başarı, günlük tekrarlanan küçük çabaların toplamıdır.", author: "Robert Collier" },
+                { text: "Gelecek, hayallerine inananların olacaktır.", author: "Eleanor Roosevelt" },
+                { text: "Bir şeyi öğrenmenin tek yolu onu yapmaktır.", author: "Aristoteles" },
+                { text: "Bugün yapabileceğinizi yarına bırakmayın.", author: "Benjamin Franklin" },
+                { text: "Başarının sırrı, başlamaktır.", author: "Mark Twain" },
+                { text: "Her ustanın bir zamanlar bir acemiydi.", author: "Ralph Waldo Emerson" },
+                { text: "Bilgi güçtür.", author: "Francis Bacon" },
+                { text: "Düşmekten korkma, kalkmamaktan kork.", author: "Anonim" },
+                { text: "Zorlukların ortasında fırsatlar yatar.", author: "Albert Einstein" },
+                { text: "Bir kitap bir bahçedir, cebinizde taşıyabilirsiniz.", author: "Çin Atasözü" },
+                { text: "Öğrenmek asla zihni yoramaz.", author: "Leonardo da Vinci" },
+                { text: "Kendine yatırım yapmak en iyi getiriyi sağlar.", author: "Benjamin Franklin" },
+                { text: "Disiplin, hedefler ile başarı arasındaki köprüdür.", author: "Jim Rohn" },
+                { text: "İlerleme mükemmellikten önemlidir.", author: "Anonim" }
+            ],
 
             // ═══════════════════════════════
             // INIT
@@ -875,6 +1360,8 @@
                 this.updateTaskBadge();
                 this.initGPA();
                 this.loadPomoStats();
+                this.renderPomoStreak();
+                this.renderStudyLog();
 
                 const today = new Date().toISOString().split('T')[0];
                 const taskDate = document.getElementById('task-date');
@@ -885,7 +1372,7 @@
                 document.addEventListener('keydown', (e) => {
                     if (e.ctrlKey || e.metaKey) {
                         const idx = parseInt(e.key) - 1;
-                        if (idx >= 0 && idx <= 5) { e.preventDefault(); this.switchTabByIndex(idx); }
+                        if (idx >= 0 && idx <= 7) { e.preventDefault(); this.switchTabByIndex(idx); }
                     }
                     if (e.code === 'Space' && document.getElementById('pomodoro').classList.contains('active')) {
                         if (!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) {
@@ -894,6 +1381,9 @@
                         }
                     }
                 });
+
+                // Auto-save every 30 seconds
+                setInterval(() => this.saveData(), 30000);
             },
 
             // ═══════════════════════════════
@@ -901,15 +1391,19 @@
             // ═══════════════════════════════
             loadData() {
                 try {
-                    const saved = localStorage.getItem('OgrenciAsistaniData_v2');
+                    const saved = localStorage.getItem('OgrenciAsistaniData_v3');
                     if (saved) this.data = { ...this.data, ...JSON.parse(saved) };
+                    else {
+                        const oldSaved = localStorage.getItem('OgrenciAsistaniData_v2');
+                        if (oldSaved) this.data = { ...this.data, ...JSON.parse(oldSaved) };
+                    }
                 } catch (e) {
                     console.error("Veri yükleme hatası:", e);
                 }
             },
 
             saveData() {
-                try { localStorage.setItem('OgrenciAsistaniData_v2', JSON.stringify(this.data)); }
+                try { localStorage.setItem('OgrenciAsistaniData_v3', JSON.stringify(this.data)); }
                 catch (e) { this.showToast('Veri kaydedilemedi!', 'error'); }
             },
 
@@ -973,6 +1467,9 @@
                 document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
                 document.getElementById(tabId).classList.add('active');
                 if (tabId === 'dashboard') this.renderDashboard();
+                if (tabId === 'flashcards') this.renderFlashcardDecks();
+                if (tabId === 'habits') this.renderHabits();
+                if (tabId === 'pomodoro') { this.renderPomoStreak(); this.renderStudyLog(); }
             },
 
             switchTabByIndex(index) {
@@ -996,6 +1493,8 @@
                 this.renderTasksList();
                 this.renderNotesList();
                 this.renderDashboard();
+                this.renderFlashcardDecks();
+                this.renderHabits();
             },
 
             showToast(message, type = 'info') {
@@ -1031,6 +1530,26 @@
                 return d.innerHTML;
             },
 
+            showConfetti() {
+                const container = document.createElement('div');
+                container.className = 'confetti-container';
+                document.body.appendChild(container);
+                const colors = ['#4f46e5','#7c3aed','#10b981','#f59e0b','#ef4444','#ec4899','#3b82f6'];
+                for (let i = 0; i < 50; i++) {
+                    const piece = document.createElement('div');
+                    piece.className = 'confetti-piece';
+                    piece.style.left = Math.random() * 100 + '%';
+                    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    piece.style.animationDelay = Math.random() * 1 + 's';
+                    piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+                    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                    piece.style.width = (6 + Math.random() * 8) + 'px';
+                    piece.style.height = (6 + Math.random() * 8) + 'px';
+                    container.appendChild(piece);
+                }
+                setTimeout(() => container.remove(), 4000);
+            },
+
             // ═══════════════════════════════
             // DASHBOARD
             // ═══════════════════════════════
@@ -1051,20 +1570,57 @@
                 document.getElementById('dash-greeting').innerText = g;
             },
 
+            renderDailyQuote() {
+                const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(),0,0)) / 86400000);
+                const q = this.quotes[dayOfYear % this.quotes.length];
+                document.getElementById('daily-quote').innerHTML = `
+                    <div class="quote-text">${q.text}</div>
+                    <div class="quote-author">— ${q.author}</div>`;
+            },
+
             renderDashboard() {
                 this.updateDateAndGreeting();
+                this.renderDailyQuote();
                 const todayName = this.getDayName();
                 const todayYMD = new Date().toISOString().split('T')[0];
 
                 const todayClasses = this.data.schedule.filter(c => c.day === todayName);
                 const activeTasks = this.data.tasks.filter(t => !t.completed);
                 const overdueTasks = this.data.tasks.filter(t => !t.completed && t.date < todayYMD);
+                const completedTasks = this.data.tasks.filter(t => t.completed);
+                const totalTasks = this.data.tasks.length;
+                const completionRate = totalTasks > 0 ? Math.round((completedTasks.length / totalTasks) * 100) : 0;
 
                 document.getElementById('dash-stats').innerHTML = `
-                    <div class="stat-card"><div class="stat-icon blue">📅</div><div class="stat-info"><h3>${todayClasses.length}</h3><p>Bugünkü Ders</p></div></div>
-                    <div class="stat-card"><div class="stat-icon yellow">📝</div><div class="stat-info"><h3>${activeTasks.length}</h3><p>Aktif Görev</p></div></div>
-                    <div class="stat-card"><div class="stat-icon red">🔥</div><div class="stat-info"><h3>${overdueTasks.length}</h3><p>Geciken</p></div></div>
-                    <div class="stat-card"><div class="stat-icon green">📓</div><div class="stat-info"><h3>${this.data.notes.length}</h3><p>Not</p></div></div>
+                    <div class="stat-card" onclick="app.switchTabByIndex(1)">
+                        <div class="stat-icon blue">📅</div>
+                        <div class="stat-info">
+                            <h3>${todayClasses.length}</h3>
+                            <p>Bugünkü Ders</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" onclick="app.switchTabByIndex(2)">
+                        <div class="stat-icon yellow">📝</div>
+                        <div class="stat-info">
+                            <h3>${activeTasks.length}</h3>
+                            <p>Aktif Görev</p>
+                            <div class="progress-bar"><div class="progress-fill yellow" style="width:${completionRate}%"></div></div>
+                        </div>
+                    </div>
+                    <div class="stat-card" onclick="app.switchTabByIndex(2)">
+                        <div class="stat-icon red">🔥</div>
+                        <div class="stat-info">
+                            <h3>${overdueTasks.length}</h3>
+                            <p>Geciken</p>
+                        </div>
+                    </div>
+                    <div class="stat-card" onclick="app.switchTabByIndex(3)">
+                        <div class="stat-icon green">📓</div>
+                        <div class="stat-info">
+                            <h3>${this.data.notes.length}</h3>
+                            <p>Not</p>
+                        </div>
+                    </div>
                 `;
 
                 // Today classes
@@ -1110,6 +1666,61 @@
                 }
 
                 this.renderWeeklyTable();
+                this.renderStudySummary();
+            },
+
+            renderStudySummary() {
+                const div = document.getElementById('dash-study-summary');
+                const todayYMD = new Date().toISOString().split('T')[0];
+                const todayLog = (this.data.studyLog || []).filter(l => l.date === todayYMD);
+                const totalMinutesToday = todayLog.reduce((sum, l) => sum + (l.minutes || 0), 0);
+
+                const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+                const weekYMD = weekAgo.toISOString().split('T')[0];
+                const weekLog = (this.data.studyLog || []).filter(l => l.date >= weekYMD);
+                const totalMinutesWeek = weekLog.reduce((sum, l) => sum + (l.minutes || 0), 0);
+
+                const completedThisWeek = this.data.tasks.filter(t => t.completed && t.completedDate >= weekYMD).length;
+                const habitsToday = (this.data.habits || []).filter(h => {
+                    const checks = h.checks || {};
+                    return checks[todayYMD];
+                }).length;
+                const totalHabits = (this.data.habits || []).length;
+
+                div.innerHTML = `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                        <div style="background:var(--bg-color);padding:1rem;border-radius:var(--radius-sm);text-align:center;">
+                            <div style="font-size:1.8rem;font-weight:800;color:var(--primary);">${totalMinutesToday}dk</div>
+                            <div style="font-size:0.8rem;color:var(--text-muted);">Bugün Çalışma</div>
+                        </div>
+                        <div style="background:var(--bg-color);padding:1rem;border-radius:var(--radius-sm);text-align:center;">
+                            <div style="font-size:1.8rem;font-weight:800;color:var(--secondary);">${Math.floor(totalMinutesWeek/60)}s ${totalMinutesWeek%60}dk</div>
+                            <div style="font-size:0.8rem;color:var(--text-muted);">Bu Hafta</div>
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                        <div style="background:var(--bg-color);padding:1rem;border-radius:var(--radius-sm);text-align:center;">
+                            <div style="font-size:1.8rem;font-weight:800;color:var(--warning);">${completedThisWeek}</div>
+                            <div style="font-size:0.8rem;color:var(--text-muted);">Haftalık Tamamlanan</div>
+                        </div>
+                        <div style="background:var(--bg-color);padding:1rem;border-radius:var(--radius-sm);text-align:center;">
+                            <div style="font-size:1.8rem;font-weight:800;color:${habitsToday===totalHabits && totalHabits>0?'var(--secondary)':'var(--text-muted)'};">${habitsToday}/${totalHabits}</div>
+                            <div style="font-size:0.8rem;color:var(--text-muted);">Bugün Alışkanlık</div>
+                            ${totalHabits > 0 ? `<div class="progress-bar" style="margin-top:0.4rem;"><div class="progress-fill green" style="width:${Math.round(habitsToday/totalHabits*100)}%"></div></div>` : ''}
+                        </div>
+                    </div>
+                    ${todayLog.length ? `
+                    <div style="margin-top:1rem;">
+                        <h4 style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem;">Son Çalışmalar</h4>
+                        ${todayLog.slice(-3).reverse().map(l => `
+                            <div class="study-log-item">
+                                <div class="study-log-dot"></div>
+                                <span>${l.subject || 'Çalışma'}</span>
+                                <span class="study-log-time">${l.minutes}dk</span>
+                            </div>
+                        `).join('')}
+                    </div>` : ''}
+                `;
             },
 
             renderWeeklyTable() {
@@ -1181,12 +1792,13 @@
             },
 
             renderScheduleList() {
-                const f = document.getElementById('filter-day').value;
+                const f = document.getElementById('filter-day')?.value || 'Tümü';
                 let list = f === "Tümü" ? this.data.schedule : this.data.schedule.filter(c => c.day === f);
                 const ord = {"Pazartesi":1,"Salı":2,"Çarşamba":3,"Perşembe":4,"Cuma":5,"Cumartesi":6,"Pazar":7};
                 list.sort((a,b) => ord[a.day]!==ord[b.day] ? ord[a.day]-ord[b.day] : a.start.localeCompare(b.start));
 
                 const div = document.getElementById('schedule-list');
+                if (!div) return;
                 if (!list.length) { div.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><p>Ders bulunamadı.</p></div>`; return; }
 
                 div.innerHTML = list.map(c => `
@@ -1213,7 +1825,9 @@
                     course: document.getElementById('task-course').value.trim(),
                     date: document.getElementById('task-date').value,
                     priority: document.getElementById('task-priority').value,
-                    completed: false
+                    desc: document.getElementById('task-desc').value.trim(),
+                    completed: false,
+                    completedDate: null
                 };
                 this.data.tasks.push(nt);
                 this.saveData(); this.renderTasksList(); this.renderDashboard(); this.updateTaskBadge();
@@ -1224,7 +1838,17 @@
 
             toggleTask(id) {
                 const t = this.data.tasks.find(x => x.id === id);
-                if (t) { t.completed = !t.completed; this.saveData(); this.renderTasksList(); this.renderDashboard(); this.updateTaskBadge(); this.showToast(t.completed ? '✅ Tamamlandı!' : '🔄 Aktif.', 'info'); }
+                if (t) {
+                    t.completed = !t.completed;
+                    t.completedDate = t.completed ? new Date().toISOString().split('T')[0] : null;
+                    this.saveData(); this.renderTasksList(); this.renderDashboard(); this.updateTaskBadge();
+                    if (t.completed) {
+                        this.showToast('✅ Tamamlandı! Harika!', 'success');
+                        this.showConfetti();
+                    } else {
+                        this.showToast('🔄 Aktif.', 'info');
+                    }
+                }
             },
 
             deleteTask(id) {
@@ -1236,8 +1860,17 @@
                 });
             },
 
+            clearCompletedTasks() {
+                const count = this.data.tasks.filter(t => t.completed).length;
+                if (!count) { this.showToast('Tamamlanan görev yok.', 'info'); return; }
+                this.confirm(`${count} tamamlanan görev silinecek.`, () => {
+                    this.data.tasks = this.data.tasks.filter(t => !t.completed);
+                    this.saveData(); this.renderTasksList(); this.renderDashboard(); this.updateTaskBadge();
+                    this.showToast(`${count} görev temizlendi.`, 'success');
+                });
+            },
+
             updateTaskBadge() {
-                const todayYMD = new Date().toISOString().split('T')[0];
                 const count = this.data.tasks.filter(t => !t.completed).length;
                 const badge = document.getElementById('task-badge');
                 if (count > 0) { badge.style.display = 'inline'; badge.textContent = count; }
@@ -1245,8 +1878,11 @@
             },
 
             renderTasksList() {
-                const filter = document.getElementById('task-filter').value;
-                const sort = document.getElementById('task-sort').value;
+                const filterEl = document.getElementById('task-filter');
+                const sortEl = document.getElementById('task-sort');
+                if (!filterEl || !sortEl) return;
+                const filter = filterEl.value;
+                const sort = sortEl.value;
                 const todayYMD = new Date().toISOString().split('T')[0];
 
                 let tasks = [...this.data.tasks];
@@ -1270,6 +1906,7 @@
                         <div class="list-item-content">
                             <h4>${t.type} ${t.name} ${t.priority==='high'?'<span style="color:var(--danger);font-size:0.8em;">🔥</span>':''} ${overdue?'<span style="color:var(--danger);font-size:0.8em;">GECİKMİŞ</span>':''}</h4>
                             <p>📅 ${isT&&!t.completed?'<strong style="color:var(--danger)">BUGÜN!</strong>':new Date(t.date).toLocaleDateString('tr-TR')} ${!t.completed&&!overdue&&dl>0?'('+dl+' gün)':''} ${t.course?'| 📚 '+t.course:''}</p>
+                            ${t.desc ? `<p style="font-size:0.8rem;margin-top:4px;opacity:0.8;">${this.escapeHtml(t.desc)}</p>` : ''}
                         </div>
                         <div class="list-item-actions">
                             <button type="button" class="btn-small ${t.completed?'btn-secondary':'btn-green'}" onclick="app.toggleTask(${t.id})">${t.completed?'↩️':'✅'}</button>
@@ -1287,8 +1924,10 @@
                     id: Date.now(),
                     title: document.getElementById('note-title').value.trim(),
                     category: document.getElementById('note-category').value,
+                    tags: document.getElementById('note-tags').value.trim().split(',').map(t => t.trim()).filter(t => t),
                     content: document.getElementById('note-content').value.trim(),
-                    date: new Date().toLocaleDateString('tr-TR')
+                    date: new Date().toLocaleDateString('tr-TR'),
+                    updated: new Date().toISOString()
                 };
                 this.data.notes.push(n);
                 this.saveData(); this.renderNotesList(); e.target.reset();
@@ -1310,6 +1949,7 @@
                 document.getElementById('note-title').value = n.title;
                 document.getElementById('note-content').value = n.content;
                 if (n.category) document.getElementById('note-category').value = n.category;
+                document.getElementById('note-tags').value = (n.tags || []).join(', ');
                 this.data.notes = this.data.notes.filter(x => x.id !== id);
                 this.saveData(); this.renderNotesList();
                 this.showToast('Not düzenleme modunda.', 'info');
@@ -1327,12 +1967,24 @@
 
             renderNotesList() {
                 const search = (document.getElementById('note-search')?.value || '').toLowerCase();
+                const catFilter = document.getElementById('note-filter-category')?.value || 'all';
                 const div = document.getElementById('notes-list');
+                if (!div) return;
+
                 let notes = [...this.data.notes].reverse();
-                if (search) notes = notes.filter(n => n.title.toLowerCase().includes(search) || n.content.toLowerCase().includes(search) || (n.category||'').toLowerCase().includes(search));
+                if (search) notes = notes.filter(n =>
+                    n.title.toLowerCase().includes(search) ||
+                    n.content.toLowerCase().includes(search) ||
+                    (n.category||'').toLowerCase().includes(search) ||
+                    (n.tags||[]).some(t => t.toLowerCase().includes(search))
+                );
+                if (catFilter !== 'all') notes = notes.filter(n => n.category === catFilter);
+
+                const countEl = document.getElementById('notes-count');
+                if (countEl) countEl.textContent = notes.length;
 
                 if (!notes.length) {
-                    div.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">📓</div><p>${search?'Sonuç bulunamadı.':'Henüz not yok.'}</p></div>`;
+                    div.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">📓</div><p>${search||catFilter!=='all'?'Sonuç bulunamadı.':'Henüz not yok.'}</p></div>`;
                     return;
                 }
 
@@ -1343,6 +1995,9 @@
                             ${n.category?`<span style="font-size:0.75rem;color:var(--text-muted);">${n.category}</span>`:''}</div>
                             <span style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;">${n.date}</span>
                         </div>
+                        ${(n.tags||[]).length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">
+                            ${n.tags.map(t => `<span style="font-size:0.7rem;background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:10px;font-weight:600;">#${this.escapeHtml(t)}</span>`).join('')}
+                        </div>` : ''}
                         <p style="white-space:pre-wrap;font-size:0.9rem;margin-bottom:12px;line-height:1.6;max-height:150px;overflow-y:auto;">${this.escapeHtml(n.content)}</p>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
                             <button type="button" class="btn-small btn-secondary" onclick="app.editNote(${n.id})">✏️ Düzenle</button>
@@ -1353,10 +2008,300 @@
             },
 
             // ═══════════════════════════════
+            // FLASHCARDS
+            // ═══════════════════════════════
+            addFlashcard(e) {
+                e.preventDefault();
+                const fc = {
+                    id: Date.now(),
+                    deck: document.getElementById('fc-deck').value.trim(),
+                    front: document.getElementById('fc-front').value.trim(),
+                    back: document.getElementById('fc-back').value.trim(),
+                    correct: 0,
+                    wrong: 0,
+                    lastStudied: null
+                };
+                if (!this.data.flashcards) this.data.flashcards = [];
+                this.data.flashcards.push(fc);
+                this.saveData();
+                this.renderFlashcardDecks();
+                e.target.reset();
+                this.showToast('Kart eklendi!', 'success');
+            },
+
+            deleteFlashcard(id) {
+                this.data.flashcards = this.data.flashcards.filter(f => f.id !== id);
+                this.saveData();
+                this.renderFlashcardDecks();
+                this.startFlashcardStudy();
+            },
+
+            renderFlashcardDecks() {
+                const cards = this.data.flashcards || [];
+                const decks = {};
+                cards.forEach(c => {
+                    if (!decks[c.deck]) decks[c.deck] = [];
+                    decks[c.deck].push(c);
+                });
+
+                const deckListDiv = document.getElementById('fc-deck-list');
+                const deckSelect = document.getElementById('fc-study-deck');
+                if (!deckListDiv || !deckSelect) return;
+
+                if (!Object.keys(decks).length) {
+                    deckListDiv.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">Henüz deste yok.</p>';
+                    deckSelect.innerHTML = '<option value="">Deste Seçin</option>';
+                    return;
+                }
+
+                deckListDiv.innerHTML = Object.entries(decks).map(([name, cards]) => `
+                    <div class="list-item" style="border-left-color:var(--primary);margin-bottom:0.4rem;">
+                        <div class="list-item-content">
+                            <h4>${this.escapeHtml(name)}</h4>
+                            <p>${cards.length} kart</p>
+                        </div>
+                        <button type="button" class="btn-danger btn-small" onclick="app.deleteDeck('${this.escapeHtml(name)}')">🗑️</button>
+                    </div>`).join('');
+
+                const currentVal = deckSelect.value;
+                deckSelect.innerHTML = '<option value="">Deste Seçin</option>' +
+                    Object.keys(decks).map(d => `<option value="${this.escapeHtml(d)}" ${d===currentVal?'selected':''}>${this.escapeHtml(d)} (${decks[d].length})</option>`).join('');
+            },
+
+            deleteDeck(deckName) {
+                this.confirm(`"${deckName}" destesi ve tüm kartları silinecek.`, () => {
+                    this.data.flashcards = (this.data.flashcards||[]).filter(f => f.deck !== deckName);
+                    this.saveData();
+                    this.renderFlashcardDecks();
+                    document.getElementById('fc-study-area').innerHTML = '<div class="empty-state"><div class="empty-icon">🃏</div><p>Deste silindi.</p></div>';
+                    this.showToast('Deste silindi.', 'info');
+                });
+            },
+
+            startFlashcardStudy() {
+                const deck = document.getElementById('fc-study-deck').value;
+                const area = document.getElementById('fc-study-area');
+
+                if (!deck) {
+                    area.innerHTML = '<div class="empty-state"><div class="empty-icon">🃏</div><p>Çalışmak için bir deste seçin.</p></div>';
+                    return;
+                }
+
+                this.fc.currentDeck = deck;
+                this.fc.studyCards = (this.data.flashcards||[]).filter(f => f.deck === deck);
+                this.fc.currentIndex = 0;
+
+                if (!this.fc.studyCards.length) {
+                    area.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>Bu destede kart yok.</p></div>';
+                    return;
+                }
+
+                // Shuffle
+                for (let i = this.fc.studyCards.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [this.fc.studyCards[i], this.fc.studyCards[j]] = [this.fc.studyCards[j], this.fc.studyCards[i]];
+                }
+
+                this.renderCurrentFlashcard();
+            },
+
+            renderCurrentFlashcard() {
+                const area = document.getElementById('fc-study-area');
+                const cards = this.fc.studyCards;
+                const idx = this.fc.currentIndex;
+
+                if (!cards.length) {
+                    area.innerHTML = '<div class="empty-state"><div class="empty-icon">🃏</div><p>Kart yok.</p></div>';
+                    return;
+                }
+
+                const card = cards[idx];
+                const total = cards.length;
+
+                area.innerHTML = `
+                    <div class="flashcard-container">
+                        <div class="flashcard" id="current-flashcard" onclick="app.flipFlashcard()">
+                            <div class="flashcard-face flashcard-front">
+                                <h3>❓ Soru</h3>
+                                <p style="font-size:1.1rem;">${this.escapeHtml(card.front)}</p>
+                                <div class="flashcard-hint">Cevabı görmek için tıkla</div>
+                            </div>
+                            <div class="flashcard-face flashcard-back">
+                                <h3>💡 Cevap</h3>
+                                <p style="font-size:1.1rem;">${this.escapeHtml(card.back)}</p>
+                                <div style="margin-top:1rem;display:flex;gap:0.5rem;">
+                                    <button type="button" class="btn-small btn-green" onclick="event.stopPropagation();app.markFlashcard(true)">✅ Bildim</button>
+                                    <button type="button" class="btn-small btn-danger" onclick="event.stopPropagation();app.markFlashcard(false)">❌ Bilmedim</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flashcard-nav">
+                        <button type="button" class="btn-small btn-secondary" onclick="app.prevFlashcard()" ${idx===0?'disabled':''}>⬅️ Önceki</button>
+                        <span class="flashcard-counter">${idx + 1} / ${total}</span>
+                        <button type="button" class="btn-small btn-secondary" onclick="app.nextFlashcard()" ${idx>=total-1?'disabled':''}>Sonraki ➡️</button>
+                    </div>
+                    <div style="text-align:center;margin-top:0.5rem;">
+                        <p style="font-size:0.8rem;color:var(--text-muted);">✅ ${card.correct || 0} doğru | ❌ ${card.wrong || 0} yanlış</p>
+                    </div>`;
+            },
+
+            flipFlashcard() {
+                const el = document.getElementById('current-flashcard');
+                if (el) el.classList.toggle('flipped');
+            },
+
+            nextFlashcard() {
+                if (this.fc.currentIndex < this.fc.studyCards.length - 1) {
+                    this.fc.currentIndex++;
+                    this.renderCurrentFlashcard();
+                }
+            },
+
+            prevFlashcard() {
+                if (this.fc.currentIndex > 0) {
+                    this.fc.currentIndex--;
+                    this.renderCurrentFlashcard();
+                }
+            },
+
+            markFlashcard(correct) {
+                const card = this.fc.studyCards[this.fc.currentIndex];
+                const original = (this.data.flashcards||[]).find(f => f.id === card.id);
+                if (original) {
+                    if (correct) { original.correct = (original.correct || 0) + 1; card.correct = original.correct; }
+                    else { original.wrong = (original.wrong || 0) + 1; card.wrong = original.wrong; }
+                    original.lastStudied = new Date().toISOString();
+                    this.saveData();
+                }
+
+                if (this.fc.currentIndex < this.fc.studyCards.length - 1) {
+                    this.fc.currentIndex++;
+                    this.renderCurrentFlashcard();
+                } else {
+                    const area = document.getElementById('fc-study-area');
+                    const totalCorrect = this.fc.studyCards.reduce((s, c) => s + (c.correct||0), 0);
+                    area.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">🎉</div>
+                            <p>Deste tamamlandı!</p>
+                            <button type="button" onclick="app.startFlashcardStudy()" style="margin-top:1rem;">🔄 Tekrar Çalış</button>
+                        </div>`;
+                    this.showConfetti();
+                }
+            },
+
+            // ═══════════════════════════════
+            // HABITS
+            // ═══════════════════════════════
+            addHabit(e) {
+                e.preventDefault();
+                const habit = {
+                    id: Date.now(),
+                    name: document.getElementById('habit-name').value.trim(),
+                    icon: document.getElementById('habit-icon').value,
+                    checks: {},
+                    createdAt: new Date().toISOString()
+                };
+                if (!this.data.habits) this.data.habits = [];
+                this.data.habits.push(habit);
+                this.saveData();
+                this.renderHabits();
+                e.target.reset();
+                this.showToast(`"${habit.name}" alışkanlığı eklendi!`, 'success');
+            },
+
+            deleteHabit(id) {
+                const h = (this.data.habits||[]).find(x => x.id === id);
+                this.confirm(`"${h?.name}" silinecek.`, () => {
+                    this.data.habits = (this.data.habits||[]).filter(x => x.id !== id);
+                    this.saveData(); this.renderHabits();
+                    this.showToast('Alışkanlık silindi.', 'info');
+                });
+            },
+
+            toggleHabitDay(habitId, dateStr) {
+                const habit = (this.data.habits||[]).find(h => h.id === habitId);
+                if (!habit) return;
+                if (!habit.checks) habit.checks = {};
+                habit.checks[dateStr] = !habit.checks[dateStr];
+                if (!habit.checks[dateStr]) delete habit.checks[dateStr];
+                this.saveData();
+                this.renderHabits();
+
+                if (habit.checks[dateStr]) {
+                    const streak = this.getHabitStreak(habit);
+                    if (streak >= 7) this.showConfetti();
+                    this.showToast(`${habit.icon} Tamamlandı! ${streak > 1 ? streak + ' günlük seri 🔥' : ''}`, 'success');
+                }
+            },
+
+            getHabitStreak(habit) {
+                let streak = 0;
+                const today = new Date();
+                const checks = habit.checks || {};
+                for (let i = 0; i < 365; i++) {
+                    const d = new Date(today);
+                    d.setDate(d.getDate() - i);
+                    const dateStr = d.toISOString().split('T')[0];
+                    if (checks[dateStr]) streak++;
+                    else break;
+                }
+                return streak;
+            },
+
+            renderHabits() {
+                const div = document.getElementById('habits-list');
+                if (!div) return;
+                const habits = this.data.habits || [];
+
+                if (!habits.length) {
+                    div.innerHTML = '<div class="empty-state"><div class="empty-icon">🔥</div><p>Henüz alışkanlık yok. Yeni bir tane ekleyin!</p></div>';
+                    return;
+                }
+
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
+                const dayLabels = ['Pz','Pt','Sa','Ça','Pe','Cu','Ct'];
+
+                div.innerHTML = habits.map(h => {
+                    const streak = this.getHabitStreak(h);
+                    const totalChecks = Object.keys(h.checks || {}).length;
+
+                    // Last 7 days
+                    let daysHtml = '';
+                    for (let i = 6; i >= 0; i--) {
+                        const d = new Date(today);
+                        d.setDate(d.getDate() - i);
+                        const dateStr = d.toISOString().split('T')[0];
+                        const isChecked = (h.checks || {})[dateStr];
+                        const isToday = i === 0;
+                        const dayLabel = dayLabels[d.getDay()];
+                        daysHtml += `<div class="habit-day ${isChecked?'checked':''} ${isToday?'today':''}"
+                            onclick="app.toggleHabitDay(${h.id},'${dateStr}')"
+                            title="${d.toLocaleDateString('tr-TR')}">${isChecked ? '✓' : dayLabel}</div>`;
+                    }
+
+                    return `
+                        <div class="habit-card" style="border-left-color:${streak >= 7 ? 'var(--secondary)' : streak >= 3 ? 'var(--warning)' : 'var(--primary)'}">
+                            <div class="habit-header">
+                                <h4>${h.icon} ${this.escapeHtml(h.name)}</h4>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span class="habit-streak">${streak > 0 ? '🔥 ' + streak + ' gün' : ''}</span>
+                                    <button type="button" class="btn-danger btn-small" onclick="app.deleteHabit(${h.id})" style="padding:2px 6px;">✕</button>
+                                </div>
+                            </div>
+                            <div class="habit-days">${daysHtml}</div>
+                            <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;">Toplam: ${totalChecks} gün</p>
+                        </div>`;
+                }).join('');
+            },
+
+            // ═══════════════════════════════
             // GPA
             // ═══════════════════════════════
             initGPA() {
-                if (!this.data.gpaRows.length) this.data.gpaRows = [{name:'',credit:'',grade:''},{name:'',credit:'',grade:''},{name:'',credit:'',grade:''}];
+                if (!this.data.gpaRows || !this.data.gpaRows.length) this.data.gpaRows = [{name:'',credit:'',grade:''},{name:'',credit:'',grade:''},{name:'',credit:'',grade:''}];
                 this.renderGPARows();
             },
 
@@ -1365,7 +2310,9 @@
             removeGPARow(i) { if (this.data.gpaRows.length <= 1) return; this.data.gpaRows.splice(i, 1); this.renderGPARows(); },
 
             renderGPARows() {
-                document.getElementById('gpa-courses').innerHTML = this.data.gpaRows.map((r, i) => `
+                const el = document.getElementById('gpa-courses');
+                if (!el) return;
+                el.innerHTML = this.data.gpaRows.map((r, i) => `
                     <div class="grade-row">
                         <input type="text" placeholder="Ders" value="${r.name}" onchange="app.data.gpaRows[${i}].name=this.value" style="flex:2;">
                         <input type="number" placeholder="Kredi" min="1" max="10" value="${r.credit}" onchange="app.data.gpaRows[${i}].credit=this.value" style="flex:0.7;">
@@ -1398,6 +2345,7 @@
                 const gpa = tp / tc;
                 const res = document.getElementById('gpa-result');
                 const det = document.getElementById('gpa-details');
+                const chart = document.getElementById('gpa-chart');
 
                 let cls = 'gpa-low', lbl = 'Yetersiz';
                 if (gpa >= 3.5) { cls='gpa-excellent'; lbl='Pekiyi'; }
@@ -1406,14 +2354,26 @@
 
                 res.className = `gpa-display ${cls}`;
                 res.innerHTML = `${gpa.toFixed(2)}<span style="font-size:1rem;display:block;">${lbl}</span>`;
+
                 det.innerHTML = `<div style="margin-top:1rem;">
                     <p style="color:var(--text-muted);margin-bottom:0.5rem;">Toplam Kredi: <strong>${tc}</strong></p>
                     <p style="color:var(--text-muted);margin-bottom:1rem;">Toplam Puan: <strong>${tp.toFixed(1)}</strong></p>
-                    ${details.map(d => `<div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:0.9rem;">
-                        <span>${d.name}</span><span>${d.credit} × ${d.grade.toFixed(1)} = <strong>${(d.credit*d.grade).toFixed(1)}</strong></span></div>`).join('')}
+                    ${details.map(d => {
+                        const pct = (d.grade / 4.0) * 100;
+                        const color = d.grade >= 3.5 ? 'green' : d.grade >= 2.0 ? '' : d.grade >= 1.0 ? 'yellow' : 'red';
+                        return `<div style="margin-bottom:0.75rem;">
+                            <div style="display:flex;justify-content:space-between;font-size:0.9rem;margin-bottom:4px;">
+                                <span>${d.name}</span>
+                                <span>${d.credit} × ${d.grade.toFixed(1)} = <strong>${(d.credit*d.grade).toFixed(1)}</strong></span>
+                            </div>
+                            <div class="progress-bar"><div class="progress-fill ${color}" style="width:${pct}%"></div></div>
+                        </div>`;
+                    }).join('')}
                 </div>`;
+
                 this.saveData();
                 this.showToast(`GPA: ${gpa.toFixed(2)} (${lbl})`, 'success');
+                if (gpa >= 3.5) this.showConfetti();
             },
 
             // ═══════════════════════════════
@@ -1421,32 +2381,90 @@
             // ═══════════════════════════════
             loadPomoStats() {
                 try {
-                    const s = localStorage.getItem('PomoStats');
+                    const s = localStorage.getItem('PomoStats_v2');
                     if (s) {
                         const p = JSON.parse(s);
                         this.pomo.sessions = p.sessions||0;
                         this.pomo.totalMinutes = p.totalMinutes||0;
                         this.pomo.todaySessions = p.todaySessions||0;
                         this.pomo.todayDate = p.todayDate||'';
+                        this.pomo.weekSessions = p.weekSessions||{};
                     }
                     const today = new Date().toISOString().split('T')[0];
                     if (this.pomo.todayDate !== today) { this.pomo.todaySessions = 0; this.pomo.todayDate = today; }
+
+                    // Clean old week data
+                    const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 14);
+                    const weekAgoStr = weekAgo.toISOString().split('T')[0];
+                    Object.keys(this.pomo.weekSessions).forEach(k => {
+                        if (k < weekAgoStr) delete this.pomo.weekSessions[k];
+                    });
+
                     this.updatePomoStats();
                 } catch (e) {}
             },
 
             savePomoStats() {
-                localStorage.setItem('PomoStats', JSON.stringify({
+                localStorage.setItem('PomoStats_v2', JSON.stringify({
                     sessions: this.pomo.sessions, totalMinutes: this.pomo.totalMinutes,
-                    todaySessions: this.pomo.todaySessions, todayDate: this.pomo.todayDate
+                    todaySessions: this.pomo.todaySessions, todayDate: this.pomo.todayDate,
+                    weekSessions: this.pomo.weekSessions
                 }));
             },
 
             updatePomoStats() {
-                document.getElementById('pomo-sessions').textContent = this.pomo.sessions;
-                const m = this.pomo.totalMinutes;
-                document.getElementById('pomo-total-time').textContent = m >= 60 ? `${Math.floor(m/60)}s ${m%60}dk` : `${m}dk`;
-                document.getElementById('pomo-today-sessions').textContent = this.pomo.todaySessions;
+                const sessEl = document.getElementById('pomo-sessions');
+                const timeEl = document.getElementById('pomo-total-time');
+                const todayEl = document.getElementById('pomo-today-sessions');
+                if (sessEl) sessEl.textContent = this.pomo.sessions;
+                if (timeEl) {
+                    const m = this.pomo.totalMinutes;
+                    timeEl.textContent = m >= 60 ? `${Math.floor(m/60)}s ${m%60}dk` : `${m}dk`;
+                }
+                if (todayEl) todayEl.textContent = this.pomo.todaySessions;
+            },
+
+            renderPomoStreak() {
+                const div = document.getElementById('pomo-streak');
+                if (!div) return;
+                const today = new Date();
+                const dayLabels = ['Pz','Pt','Sa','Ça','Pe','Cu','Ct'];
+                let html = '';
+
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date(today);
+                    d.setDate(d.getDate() - i);
+                    const dateStr = d.toISOString().split('T')[0];
+                    const sessions = (this.pomo.weekSessions || {})[dateStr] || 0;
+                    const isToday = i === 0;
+                    html += `<div class="streak-dot ${sessions > 0 ? 'active' : ''} ${isToday ? 'today' : ''}"
+                        title="${d.toLocaleDateString('tr-TR')}: ${sessions} oturum">${dayLabels[d.getDay()]}</div>`;
+                }
+
+                div.innerHTML = html;
+            },
+
+            renderStudyLog() {
+                const div = document.getElementById('pomo-log');
+                if (!div) return;
+                const todayYMD = new Date().toISOString().split('T')[0];
+                const todayLog = (this.data.studyLog || []).filter(l => l.date === todayYMD).reverse();
+
+                if (!todayLog.length) {
+                    div.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Henüz bugün çalışma kaydı yok.</p></div>';
+                    return;
+                }
+
+                div.innerHTML = todayLog.map(l => `
+                    <div class="study-log-item">
+                        <div class="study-log-dot" style="background:${l.type === 'break' ? 'var(--secondary)' : 'var(--primary)'}"></div>
+                        <div style="flex:1;">
+                            <span style="font-weight:600;">${l.subject || l.type === 'break' ? 'Mola' : 'Çalışma'}</span>
+                            ${l.subject ? `<span style="font-size:0.8rem;color:var(--text-muted);"> — ${l.subject}</span>` : ''}
+                        </div>
+                        <span class="study-log-time">${l.minutes}dk · ${l.time}</span>
+                    </div>
+                `).join('');
             },
 
             updatePomoDisplay() {
@@ -1474,19 +2492,44 @@
                             this.pomo.totalMinutes += this.pomo.mode;
                             this.pomo.todaySessions++;
                             this.pomo.todayDate = new Date().toISOString().split('T')[0];
+
+                            if (!this.pomo.weekSessions) this.pomo.weekSessions = {};
+                            this.pomo.weekSessions[this.pomo.todayDate] = (this.pomo.weekSessions[this.pomo.todayDate] || 0) + 1;
+
+                            // Add to study log
+                            if (!this.data.studyLog) this.data.studyLog = [];
+                            this.data.studyLog.push({
+                                date: this.pomo.todayDate,
+                                time: new Date().toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'}),
+                                minutes: this.pomo.mode,
+                                subject: document.getElementById('pomo-subject')?.value || '',
+                                type: 'work'
+                            });
+                            this.saveData();
+
                             this.savePomoStats(); this.updatePomoStats();
+                            this.renderPomoStreak(); this.renderStudyLog();
                         }
                         this.showToast(isWork ? '🎉 Çalışma bitti! Mola zamanı.' : '⏰ Mola bitti! Çalışma zamanı.', 'success');
+                        if (isWork) this.showConfetti();
+
                         try {
                             if ('Notification' in window && Notification.permission === 'granted')
-                                new Notification('Pomodoro', { body: isWork ? 'Çalışma bitti!' : 'Mola bitti!' });
+                                new Notification('Pomodoro', { body: isWork ? 'Çalışma bitti!' : 'Mola bitti!', icon: '🎓' });
                         } catch(e){}
                         try {
                             const ctx = new (window.AudioContext||window.webkitAudioContext)();
                             const osc = ctx.createOscillator(); const g = ctx.createGain();
                             osc.connect(g); g.connect(ctx.destination);
                             osc.frequency.value = 800; g.gain.value = 0.3;
-                            osc.start(); setTimeout(()=>{osc.stop();ctx.close();},500);
+                            osc.start();
+                            setTimeout(() => {
+                                osc.frequency.value = 1000;
+                                setTimeout(() => {
+                                    osc.frequency.value = 1200;
+                                    setTimeout(() => { osc.stop(); ctx.close(); }, 200);
+                                }, 200);
+                            }, 200);
                         } catch(e){}
                     }
                 }, 1000);
