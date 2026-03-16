@@ -1487,7 +1487,7 @@
 
         saveData() {
             try { localStorage.setItem('OgrenciAsistaniData_v3', JSON.stringify(this.data)); }
-            catch (e) { /* silent */ }
+            catch (e) { this.showToast('Veri kaydetme hatası! Depolama alanı dolu olabilir.', 'error'); }
         },
 
         exportData() {
@@ -1512,7 +1512,13 @@
                 try {
                     const imported = JSON.parse(e.target.result);
                     if (typeof imported !== 'object' || imported === null) throw new Error('Geçersiz format');
-                    this.data = { ...this.data, ...imported };
+                    const validKeys = ['theme','schedule','tasks','notes','gpaRows','flashcards','habits','studyLog'];
+                    const filtered = {};
+                    for (const key of validKeys) {
+                        if (key in imported) filtered[key] = imported[key];
+                    }
+                    if (!Object.keys(filtered).length) throw new Error('Tanınan veri bulunamadı');
+                    this.data = { ...this.data, ...filtered };
                     ['schedule','tasks','notes','gpaRows','flashcards','habits','studyLog'].forEach(k => {
                         if (!Array.isArray(this.data[k])) this.data[k] = [];
                     });
@@ -1829,6 +1835,22 @@
             });
         },
 
+        editSchedule(id) {
+            const c = this.data.schedule.find(x => x.id === id);
+            if (!c) return;
+            this.$('class-day').value = c.day;
+            this.$('class-name').value = c.name;
+            this.$('class-teacher').value = c.teacher || '';
+            this.$('class-start').value = c.start;
+            this.$('class-end').value = c.end;
+            this.$('class-color').value = c.color || '#4f46e5';
+            this.data.schedule = this.data.schedule.filter(x => x.id !== id);
+            this.saveData(); this.renderScheduleList(); this.renderDashboard();
+            this.showToast('Düzenleme modunda.', 'info');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            this.$('class-name').focus();
+        },
+
         renderScheduleList() {
             const filterEl = this.$('filter-day');
             const f = filterEl ? filterEl.value : 'Tümü';
@@ -1845,6 +1867,7 @@
                         <p>⏱️ ${c.start} - ${c.end} ${c.teacher?'| 👤 '+this.escapeHtml(c.teacher):''}</p>
                     </div>
                     <div class="list-item-actions">
+                        <button type="button" class="btn-small btn-secondary" onclick="app.editSchedule(${c.id})">✏️</button>
                         <button type="button" class="btn-danger btn-small" onclick="app.deleteClass(${c.id})">🗑️</button>
                     </div></div>`).join('');
         },
@@ -1889,6 +1912,22 @@
                 this.saveData(); this.renderTasksList(); this.renderDashboard(); this.updateTaskBadge();
                 this.showToast('Görev silindi.', 'info');
             });
+        },
+
+        editTask(id) {
+            const t = this.data.tasks.find(x => x.id === id);
+            if (!t) return;
+            this.$('task-type').value = t.type;
+            this.$('task-name').value = t.name;
+            this.$('task-course').value = t.course || '';
+            this.$('task-date').value = t.date;
+            this.$('task-priority').value = t.priority;
+            this.$('task-desc').value = t.desc || '';
+            this.data.tasks = this.data.tasks.filter(x => x.id !== id);
+            this.saveData(); this.renderTasksList(); this.renderDashboard(); this.updateTaskBadge();
+            this.showToast('Düzenleme modunda.', 'info');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            this.$('task-name').focus();
         },
 
         clearCompletedTasks() {
@@ -1945,6 +1984,7 @@
                         ${t.desc ? `<p style="font-size:0.78rem;margin-top:3px;opacity:0.7;">${this.escapeHtml(t.desc).substring(0,120)}</p>` : ''}
                     </div>
                     <div class="list-item-actions">
+                        <button type="button" class="btn-small btn-secondary" onclick="app.editTask(${t.id})">✏️</button>
                         <button type="button" class="btn-small ${t.completed?'btn-secondary':'btn-green'}" onclick="app.toggleTask(${t.id})">${t.completed?'↩️':'✅'}</button>
                         <button type="button" class="btn-danger btn-small" onclick="app.deleteTask(${t.id})">🗑️</button>
                     </div></div>`;
@@ -2307,7 +2347,7 @@
                 <p style="color:var(--text-muted);margin-bottom:0.4rem;font-size:0.88rem;">Toplam Kredi: <strong>${tc}</strong> | Puan: <strong>${tp.toFixed(1)}</strong></p>
                 ${details.map(d => {
                     const pct = (d.grade/4.0)*100;
-                    const color = d.grade>=3.5?'green':d.grade>=2.0?'':d.grade>=1.0?'yellow':'red';
+                    const color = d.grade>=3.5?'green':d.grade>=3.0?'blue':d.grade>=2.0?'':d.grade>=1.0?'yellow':'red';
                     return `<div style="margin-bottom:0.6rem;">
                         <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:3px;">
                             <span>${this.escapeHtml(d.name)}</span><span><strong>${(d.credit*d.grade).toFixed(1)}</strong></span></div>
@@ -2347,7 +2387,7 @@
                 sessions: this.pomo.sessions, totalMinutes: this.pomo.totalMinutes,
                 todaySessions: this.pomo.todaySessions, todayDate: this.pomo.todayDate,
                 weekSessions: this.pomo.weekSessions
-            })); } catch(e){}
+            })); } catch(e){ this.showToast('Pomodoro verileri kaydedilemedi!', 'error'); }
         },
 
         updatePomoStats() {
