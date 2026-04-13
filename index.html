@@ -574,6 +574,62 @@
         .modal-box p { color: var(--text-muted); margin-bottom: 1.25rem; font-size: 0.93rem; word-break: break-word; }
         .modal-actions { display: flex; gap: 0.65rem; justify-content: center; }
 
+        /* ══════════ IMPORT FROM IMAGE ══════════ */
+        .import-modal-box {
+            background: var(--card-bg); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 1.75rem;
+            max-width: 520px; width: 100%;
+            box-shadow: var(--shadow-lg);
+            animation: modalSlideUp 0.3s ease;
+            max-height: 90vh; overflow-y: auto;
+        }
+        .import-modal-box h3 { margin-bottom: 0.25rem; font-size: 1.2rem; }
+        .import-modal-sub { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem; }
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1.75rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        .drop-zone input[type="file"] {
+            position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+        }
+        .drop-zone .drop-icon { font-size: 2.2rem; margin-bottom: 0.4rem; }
+        .drop-zone .drop-text { color: var(--text-muted); font-size: 0.88rem; }
+        .drop-zone.has-file { border-color: var(--secondary); background: var(--secondary-light); }
+        .import-img-preview { max-width: 100%; max-height: 180px; border-radius: var(--radius-sm); margin-top: 0.65rem; object-fit: contain; }
+        .import-preview-item {
+            display: flex; align-items: flex-start; gap: 0.75rem;
+            padding: 0.7rem 0.75rem; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); margin-bottom: 0.45rem;
+            transition: var(--transition);
+        }
+        .import-preview-item:hover { border-color: var(--primary); background: var(--primary-light); }
+        .import-preview-item input[type="checkbox"] { margin-top: 3px; width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary); flex-shrink: 0; }
+        .import-preview-item .ipi-body { flex: 1; min-width: 0; }
+        .import-preview-item .ipi-name { font-weight: 600; font-size: 0.93rem; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .import-preview-item .ipi-detail { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+        .ipi-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .import-conflict { background: var(--danger-light) !important; border-color: var(--danger) !important; }
+        .conflict-badge { font-size: 0.68rem; background: var(--danger); color: white; padding: 1px 6px; border-radius: 20px; }
+        .import-spinner {
+            display: inline-block; width: 18px; height: 18px;
+            border: 2.5px solid var(--border); border-top-color: var(--primary);
+            border-radius: 50%; animation: importSpin 0.7s linear infinite; vertical-align: middle; margin-right: 6px;
+        }
+        @keyframes importSpin { to { transform: rotate(360deg); } }
+        .import-status-box { text-align: center; padding: 0.65rem; color: var(--text-muted); font-size: 0.88rem; border-radius: var(--radius-sm); background: var(--primary-light); margin-top: 0.75rem; }
+        .import-status-box.error { background: var(--danger-light); color: var(--danger); }
+        .import-btn-row { display: flex; gap: 0.6rem; margin-top: 1rem; flex-wrap: wrap; }
+        .import-btn-row button { flex: 1; min-width: 80px; }
+
         /* GPA */
         .gpa-display {
             font-size: 2.8rem; font-weight: 800;
@@ -1193,6 +1249,7 @@
                             </select>
                         </div>
                         <button type="submit" style="width:100%;">➕ Dersi Ekle</button>
+                        <button type="button" style="width:100%;margin-top:0.5rem;" class="btn-secondary" onclick="app.openImportModal()">📸 Fotoğraftan İçe Aktar</button>
                     </form>
                 </div>
                 <div class="card">
@@ -1458,6 +1515,59 @@
         </section>
 
     </main>
+
+    <!-- ═══ IMPORT FROM IMAGE MODAL ═══ -->
+    <div id="import-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)app.closeImportModal()">
+        <div class="import-modal-box">
+            <h3>📸 Fotoğraftan Ders Programı Al</h3>
+            <p class="import-modal-sub">Ders programı fotoğrafını yükle, yapay zeka otomatik tanıyıp eklesin.</p>
+
+            <div class="form-group">
+                <label>Claude API Anahtarı &nbsp;<span style="color:var(--text-muted);font-size:0.78em;">anthropic.com'dan alabilirsiniz</span></label>
+                <div style="position:relative;">
+                    <input type="password" id="import-api-key" placeholder="sk-ant-api03-..." style="width:100%;padding-right:2.8rem;" autocomplete="off" spellcheck="false">
+                    <button type="button" id="api-key-toggle" onclick="app.toggleApiKeyVisibility()" title="Göster/Gizle"
+                        style="position:absolute;right:0.5rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:0;font-size:1.1rem;line-height:1;">👁️</button>
+                </div>
+                <p style="font-size:0.74rem;color:var(--text-muted);margin-top:0.25rem;">🔒 Anahtar yalnızca tarayıcınızda saklanır, hiçbir yere gönderilmez.</p>
+            </div>
+
+            <div class="form-group">
+                <label>Ders Programı Fotoğrafı</label>
+                <div class="drop-zone" id="import-drop-zone"
+                     ondragover="event.preventDefault();this.classList.add('drag-over')"
+                     ondragleave="this.classList.remove('drag-over')"
+                     ondrop="event.preventDefault();this.classList.remove('drag-over');app.setImportFile(event.dataTransfer.files[0])">
+                    <input type="file" accept="image/*" id="import-file-input" onchange="app.setImportFile(this.files[0])">
+                    <div class="drop-icon">🖼️</div>
+                    <div class="drop-text" id="import-drop-text">Fotoğraf seçin veya buraya sürükleyin<br><small>JPG, PNG, WEBP desteklenir</small></div>
+                    <img id="import-img-preview" class="import-img-preview" style="display:none;" alt="Önizleme">
+                </div>
+            </div>
+
+            <div id="import-status-box" style="display:none;"></div>
+
+            <div class="import-btn-row">
+                <button type="button" class="btn-secondary" onclick="app.closeImportModal()">İptal</button>
+                <button type="button" id="import-analyze-btn" onclick="app.processScheduleImage()" style="flex:2;">🔍 Analiz Et</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ IMPORT PREVIEW MODAL ═══ -->
+    <div id="import-preview-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)app.closeImportPreview()">
+        <div class="import-modal-box">
+            <h3>✅ Bulunan Dersler</h3>
+            <p class="import-modal-sub" id="import-preview-count">Eklemek istediklerini seç:</p>
+            <div id="import-preview-list" style="max-height:52vh;overflow-y:auto;margin-bottom:1rem;"></div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                <button type="button" class="btn-secondary" style="flex:1;min-width:70px;" onclick="app.closeImportPreview()">İptal</button>
+                <button type="button" class="btn-secondary" style="flex:1;min-width:70px;font-size:0.82rem;" onclick="app.toggleAllImportItems(false)">Kaldır</button>
+                <button type="button" class="btn-secondary" style="flex:1;min-width:70px;font-size:0.82rem;" onclick="app.toggleAllImportItems(true)">Tümü</button>
+                <button type="button" style="flex:2;min-width:120px;" onclick="app.saveImportedSchedule()">💾 Kaydet</button>
+            </div>
+        </div>
+    </div>
 
     <script>
     const app = {
@@ -1958,6 +2068,264 @@
                         <button type="button" class="btn-small btn-secondary" onclick="app.editSchedule(${c.id})">✏️</button>
                         <button type="button" class="btn-danger btn-small" onclick="app.deleteClass(${c.id})">🗑️</button>
                     </div></div>`).join('');
+        },
+
+        // ═════════ IMPORT FROM IMAGE ═════════
+        _importItems: [],
+        _importFile: null,
+
+        openImportModal() {
+            const modal = this.$('import-modal');
+            if (!modal) return;
+            const saved = localStorage.getItem('OgrenciAsistaniApiKey');
+            if (saved) { const k = this.$('import-api-key'); if (k) k.value = saved; }
+            modal.style.display = 'flex';
+        },
+
+        closeImportModal() {
+            const modal = this.$('import-modal');
+            if (modal) modal.style.display = 'none';
+            this._importFile = null;
+            const sb = this.$('import-status-box');
+            if (sb) { sb.style.display = 'none'; sb.innerHTML = ''; sb.className = ''; }
+            const prev = this.$('import-img-preview');
+            if (prev) { prev.style.display = 'none'; prev.src = ''; }
+            const dt = this.$('import-drop-text');
+            if (dt) dt.innerHTML = 'Fotoğraf seçin veya buraya sürükleyin<br><small>JPG, PNG, WEBP desteklenir</small>';
+            const dz = this.$('import-drop-zone');
+            if (dz) dz.classList.remove('has-file');
+            const btn = this.$('import-analyze-btn');
+            if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Analiz Et'; }
+            const fi = this.$('import-file-input');
+            if (fi) fi.value = '';
+        },
+
+        toggleApiKeyVisibility() {
+            const input = this.$('import-api-key');
+            const toggle = this.$('api-key-toggle');
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (toggle) toggle.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                if (toggle) toggle.textContent = '👁️';
+            }
+        },
+
+        setImportFile(file) {
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                this.showToast('Lütfen bir resim dosyası seçin!', 'warning'); return;
+            }
+            this._importFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const prev = this.$('import-img-preview');
+                if (prev) { prev.src = e.target.result; prev.style.display = 'block'; }
+                const dt = this.$('import-drop-text');
+                if (dt) dt.innerHTML = `📷 ${this.escapeHtml(file.name)}`;
+                const dz = this.$('import-drop-zone');
+                if (dz) dz.classList.add('has-file');
+            };
+            reader.readAsDataURL(file);
+        },
+
+        async processScheduleImage() {
+            const apiKey = this.$('import-api-key')?.value.trim();
+            if (!apiKey) { this.showToast('Lütfen Claude API anahtarını girin!', 'warning'); return; }
+            if (!this._importFile) { this.showToast('Lütfen bir fotoğraf seçin!', 'warning'); return; }
+
+            localStorage.setItem('OgrenciAsistaniApiKey', apiKey);
+
+            const btn = this.$('import-analyze-btn');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<span class="import-spinner"></span> Analiz ediliyor...'; }
+            const sb = this.$('import-status-box');
+            if (sb) {
+                sb.className = 'import-status-box';
+                sb.style.display = 'block';
+                sb.innerHTML = '🤖 Yapay zeka ders programını okuyor, lütfen bekleyin...';
+            }
+
+            try {
+                const base64 = await this._fileToBase64(this._importFile);
+                const mediaType = this._importFile.type;
+
+                const resp = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-haiku-4-5-20251001',
+                        max_tokens: 2048,
+                        messages: [{
+                            role: 'user',
+                            content: [
+                                {
+                                    type: 'image',
+                                    source: { type: 'base64', media_type: mediaType, data: base64 }
+                                },
+                                {
+                                    type: 'text',
+                                    text: `Bu görüntüde bir haftalık ders programı var. Tüm dersleri JSON dizisi olarak çıkar. Her ders nesnesi tam olarak şu alanları içermeli:
+- "day": Türkçe gün adı — yalnızca şunlardan biri: Pazartesi, Salı, Çarşamba, Perşembe, Cuma, Cumartesi, Pazar
+- "name": Ders adı (string)
+- "teacher": Öğretmen/hoca adı (string, yoksa boş string "")
+- "start": Başlangıç saati "HH:MM" formatında (örn: "09:00")
+- "end": Bitiş saati "HH:MM" formatında (örn: "10:30")
+
+Yalnızca geçerli bir JSON dizisi döndür, başka hiçbir açıklama veya metin ekleme. Ders programı bulunamazsa boş dizi [] döndür.`
+                                }
+                            ]
+                        }]
+                    })
+                });
+
+                if (!resp.ok) {
+                    const errData = await resp.json().catch(() => ({}));
+                    const msg = errData.error?.message || `API hatası (${resp.status})`;
+                    throw new Error(msg);
+                }
+
+                const result = await resp.json();
+                const text = result.content?.[0]?.text || '';
+
+                const jsonMatch = text.match(/\[[\s\S]*\]/);
+                if (!jsonMatch) throw new Error('Yanıtta ders programı bulunamadı. Daha net bir fotoğraf deneyin.');
+
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (!Array.isArray(parsed) || parsed.length === 0) {
+                    throw new Error('Hiç ders tespit edilemedi. Daha net veya farklı bir fotoğraf deneyin.');
+                }
+
+                const validDays = ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
+                const colorPalette = ['#4f46e5','#10b981','#ef4444','#f59e0b','#3b82f6','#ec4899'];
+                const timeRe = /^\d{2}:\d{2}$/;
+
+                const valid = parsed
+                    .filter(it => it && it.day && it.name && it.start && it.end && validDays.includes(it.day))
+                    .map((it, idx) => {
+                        const start = timeRe.test(it.start) ? it.start : it.start.replace(/(\d{1,2})[:\.](\d{2})/, (_,h,m) => `${h.padStart(2,'0')}:${m}`);
+                        const end   = timeRe.test(it.end)   ? it.end   : it.end.replace(/(\d{1,2})[:\.](\d{2})/, (_,h,m) => `${h.padStart(2,'0')}:${m}`);
+                        const hasConflict = !!this.data.schedule.find(c =>
+                            c.day === it.day && !(end <= c.start || start >= c.end)
+                        );
+                        return {
+                            id: Date.now() + idx,
+                            day: it.day,
+                            name: String(it.name).trim().substring(0, 100),
+                            teacher: String(it.teacher || '').trim().substring(0, 100),
+                            start, end,
+                            color: colorPalette[idx % colorPalette.length],
+                            _selected: !hasConflict,
+                            _conflict: hasConflict
+                        };
+                    });
+
+                if (valid.length === 0) throw new Error('Geçerli formatta ders bulunamadı. Lütfen fotoğrafı kontrol edin.');
+
+                this._importItems = valid;
+                this.closeImportModal();
+                this.showImportPreview();
+
+            } catch (err) {
+                const sb = this.$('import-status-box');
+                if (sb) {
+                    sb.className = 'import-status-box error';
+                    sb.innerHTML = `❌ ${this.escapeHtml(err.message)}`;
+                }
+                const btn = this.$('import-analyze-btn');
+                if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Tekrar Dene'; }
+            }
+        },
+
+        _fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        },
+
+        showImportPreview() {
+            const modal = this.$('import-preview-modal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+            const countEl = this.$('import-preview-count');
+            if (countEl) {
+                const conflicts = this._importItems.filter(i => i._conflict).length;
+                countEl.textContent = `${this._importItems.length} ders bulundu.${conflicts ? ` (${conflicts} çakışmalı ders işaretsiz)` : ' Eklemek istediklerini seç:'}`;
+            }
+            this._renderImportPreviewList();
+        },
+
+        _renderImportPreviewList() {
+            const list = this.$('import-preview-list');
+            if (!list) return;
+            if (!this._importItems.length) {
+                list.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:1rem;">Ders bulunamadı.</div>';
+                return;
+            }
+            list.innerHTML = this._importItems.map((item, i) => `
+                <div class="import-preview-item${item._conflict ? ' import-conflict' : ''}">
+                    <input type="checkbox" ${item._selected ? 'checked' : ''} onchange="app._importItems[${i}]._selected=this.checked">
+                    <div class="ipi-body">
+                        <div class="ipi-name">
+                            <span class="ipi-color-dot" style="background:${this.escapeAttr(item.color)};display:inline-block;"></span>
+                            ${this.escapeHtml(item.name)}
+                            ${item._conflict ? '<span class="conflict-badge">⚠️ Çakışma</span>' : ''}
+                        </div>
+                        <div class="ipi-detail">
+                            📅 ${this.escapeHtml(item.day)} &nbsp; ⏱️ ${item.start} – ${item.end}${item.teacher ? ' &nbsp; 👤 ' + this.escapeHtml(item.teacher) : ''}
+                        </div>
+                    </div>
+                </div>`).join('');
+        },
+
+        closeImportPreview() {
+            const modal = this.$('import-preview-modal');
+            if (modal) modal.style.display = 'none';
+            this._importItems = [];
+        },
+
+        toggleAllImportItems(checked) {
+            this._importItems.forEach(it => it._selected = checked);
+            this._renderImportPreviewList();
+        },
+
+        saveImportedSchedule() {
+            const selected = this._importItems.filter(it => it._selected);
+            if (selected.length === 0) { this.showToast('En az bir ders seçin!', 'warning'); return; }
+
+            let added = 0, skipped = 0;
+            selected.forEach((item, idx) => {
+                const conflict = this.data.schedule.find(c =>
+                    c.day === item.day && !(item.end <= c.start || item.start >= c.end)
+                );
+                if (conflict) { skipped++; return; }
+                this.data.schedule.push({
+                    id: Date.now() + idx,
+                    day: item.day, name: item.name, teacher: item.teacher,
+                    start: item.start, end: item.end, color: item.color
+                });
+                added++;
+            });
+
+            this.saveData();
+            this.renderScheduleList();
+            this.renderDashboard();
+            this.closeImportPreview();
+
+            if (added > 0) {
+                this.showToast(`${added} ders eklendi!${skipped > 0 ? ' (' + skipped + ' çakışma atlandı)' : ''}`, 'success');
+            } else {
+                this.showToast('Seçili derslerin tamamında çakışma var, eklenemedi!', 'warning');
+            }
         },
 
         // ═════════ TASKS ═════════
