@@ -310,6 +310,12 @@
             background-position: right 0.75rem center;
             padding-right: 2rem;
         }
+        /* Onay kutusu / radyo: yukarıdaki appearance:none işaret çizimini de siliyordu (seçili kutu boş görünüyordu) */
+        input[type="checkbox"], input[type="radio"] {
+            -webkit-appearance: auto; appearance: auto;
+            width: auto; padding: 0; border: none; background: none;
+            accent-color: var(--primary); cursor: pointer;
+        }
         input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
         textarea { resize: vertical; min-height: 80px; }
 
@@ -631,6 +637,28 @@
         .import-source-row button { flex: 1; font-size: 0.85rem; padding: 0.6rem 0.5rem; }
         .import-btn-row { display: flex; gap: 0.6rem; margin-top: 1rem; flex-wrap: wrap; }
         .import-btn-row button { flex: 1; min-width: 80px; }
+        /* Düzenlenebilir önizleme */
+        .import-preview-item .ipi-row { display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.3rem; }
+        .import-preview-item .ipi-input { flex: 1; min-width: 0; width: auto; padding: 0.35rem 0.5rem; font-size: 0.85rem; }
+        .import-preview-item .ipi-name-input { font-weight: 600; }
+        .import-preview-item input[type="checkbox"] { padding: 0 !important; flex: 0 0 18px; width: 18px; height: 18px; margin-top: 6px; }
+        .import-uncertain { background: var(--warning-light); border-color: var(--warning); }
+        .uncertain-badge { display: inline-block; font-size: 0.68rem; background: var(--warning); color: #1f2937; padding: 1px 6px; border-radius: 20px; }
+        .import-periods { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.55rem 0.75rem; margin-bottom: 0.6rem; }
+        .import-periods.has-estimate { border-color: var(--warning); background: var(--warning-light); }
+        .import-periods summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+        .import-periods summary span { font-weight: 400; color: var(--text-muted); font-size: 0.8rem; }
+        .import-periods-help { font-size: 0.75rem; color: var(--text-muted); margin: 0.35rem 0 0.45rem; }
+        .import-period-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; font-size: 0.85rem; }
+        .import-period-row input[type="time"] { flex: 1; min-width: 0; width: auto; padding: 0.3rem 0.45rem; font-size: 0.85rem; }
+        .import-period-row.estimated input[type="time"] { border-color: var(--warning); }
+        .import-period-no { flex: 0 0 1.6rem; color: var(--text-muted); font-weight: 600; }
+        .import-replace-row { display: flex; align-items: center; gap: 0.45rem; font-size: 0.82rem; margin: 0 0 0.75rem; cursor: pointer; }
+        .import-replace-row input { width: auto; margin: 0; accent-color: var(--danger); }
+        @media (max-width: 480px) {
+            .import-modal-box { padding: 1.1rem; }
+            .import-preview-item { padding: 0.6rem; gap: 0.5rem; }
+        }
 
         /* GPA */
         .gpa-display {
@@ -932,7 +960,7 @@
             /* Main */
             .main-content {
                 padding: 0.85rem;
-                padding-bottom: calc(5rem + var(--safe-bottom));
+                padding-bottom: calc(9rem + var(--safe-bottom)); /* alt menü + ⚙️ butonu son satırı kapatmasın */
             }
 
             /* Grid */
@@ -1025,7 +1053,7 @@
             .stat-info h3 { font-size: 1.15rem; }
             .timer-ring { width: 170px; height: 170px; }
             .timer-display { font-size: 2.2rem; }
-            .main-content { padding: 0.65rem; padding-bottom: calc(5rem + var(--safe-bottom)); }
+            .main-content { padding: 0.65rem; padding-bottom: calc(9rem + var(--safe-bottom)); /* alt menü + ⚙️ butonu son satırı kapatmasın */ }
             .bottom-nav-item { padding: 0.35rem 0.45rem; min-width: 48px; }
             .bottom-nav-item .bnav-icon { font-size: 1rem; }
             .bottom-nav-item .bnav-label { font-size: 0.55rem; }
@@ -1527,35 +1555,7 @@
     <div id="import-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)app.closeImportModal()">
         <div class="import-modal-box">
             <h3>📸 Fotoğraftan Ders Programı Al</h3>
-            <p class="import-modal-sub">Ders programı fotoğrafını yükle, yapay zeka otomatik tanıyıp eklesin.</p>
-
-            <div class="form-group">
-                <label for="import-provider">Yapay Zeka Sağlayıcısı</label>
-                <select id="import-provider" onchange="app.onImportProviderChange()" style="width:100%;">
-                    <option value="claude">Claude (Anthropic) — fotoğraf için önerilir</option>
-                    <option value="deepseek">DeepSeek</option>
-                </select>
-            </div>
-
-            <div class="form-group" id="import-model-group" style="display:none;">
-                <label for="import-model">DeepSeek Modeli</label>
-                <input type="text" id="import-model" value="deepseek-chat" style="width:100%;" autocomplete="off" spellcheck="false">
-                <p style="font-size:0.74rem;color:var(--text-muted);margin-top:0.25rem;">ℹ️ DeepSeek görseli doğrudan okuyamaz. Fotoğraf <b>cihazınızda OCR ile metne çevrilir</b>, sonra DeepSeek bu metni ders programına dönüştürür. <code>deepseek-chat</code> uygundur. (İlk kullanımda OCR verisi indirilir.)</p>
-            </div>
-
-            <div class="form-group">
-                <label id="import-api-key-label" for="import-api-key">Claude API Anahtarı &nbsp;<span id="import-api-key-hint" style="color:var(--text-muted);font-size:0.78em;">anthropic.com'dan alabilirsiniz</span></label>
-                <div style="position:relative;">
-                    <input type="password" id="import-api-key" placeholder="sk-ant-api03-..." style="width:100%;padding-right:2.8rem;" autocomplete="off" spellcheck="false">
-                    <button type="button" id="api-key-toggle" onclick="app.toggleApiKeyVisibility()" title="Göster/Gizle" aria-label="API anahtarını göster veya gizle"
-                        style="position:absolute;right:0.5rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:0;font-size:1.1rem;line-height:1;">👁️</button>
-                </div>
-                <p id="import-api-key-note" style="font-size:0.74rem;color:var(--text-muted);margin-top:0.25rem;">🔒 Anahtar bu analiz isteği için Anthropic API’ye gönderilir ve bu uygulamada kalıcı olarak saklanmaz.</p>
-                <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;margin-top:0.45rem;cursor:pointer;font-weight:normal;">
-                    <input type="checkbox" id="import-remember-key" style="width:auto;margin:0;"> Anahtarı bu cihazda hatırla
-                    <span style="color:var(--text-muted);font-size:0.92em;">(yalnızca bu tarayıcıda saklanır)</span>
-                </label>
-            </div>
+            <p class="import-modal-sub">Ders programının fotoğrafını çek ya da galeriden seç; uygulama tabloyu <b>bu cihazda</b> okur. İnternet bağlantısı, hesap veya anahtar gerekmez.</p>
 
             <div class="form-group">
                 <label>Ders Programı Fotoğrafı</label>
@@ -1581,7 +1581,7 @@
 
             <div class="import-btn-row">
                 <button type="button" class="btn-secondary" onclick="app.closeImportModal()">İptal</button>
-                <button type="button" id="import-analyze-btn" onclick="app.processScheduleImage()" style="flex:2;">🔍 Analiz Et</button>
+                <button type="button" id="import-analyze-btn" onclick="app.processScheduleImage()" style="flex:2;">🔍 Programı Oku</button>
             </div>
         </div>
     </div>
@@ -1591,7 +1591,17 @@
         <div class="import-modal-box">
             <h3>✅ Bulunan Dersler</h3>
             <p class="import-modal-sub" id="import-preview-count">Eklemek istediklerini seç:</p>
-            <div id="import-preview-list" style="max-height:52vh;overflow-y:auto;margin-bottom:1rem;"></div>
+            <div style="max-height:58vh;overflow-y:auto;margin-bottom:1rem;">
+                <details id="import-periods-box" class="import-periods" style="display:none;">
+                    <summary>⏰ Ders saatleri <span id="import-periods-note"></span></summary>
+                    <p class="import-periods-help">Sütun başındaki ders saatleri. Birini düzeltirsen o saatteki bütün dersler güncellenir. Turuncu olanlar fotoğraftan okunamadı, tahmin edildi.</p>
+                    <div id="import-periods-list"></div>
+                </details>
+                <div id="import-preview-list"></div>
+            </div>
+            <label id="import-replace-row" class="import-replace-row" style="display:none;">
+                <input type="checkbox" id="import-replace-existing" onchange="app.onImportReplaceChange()"> Mevcut ders programımı sil, bununla değiştir
+            </label>
             <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
                 <button type="button" class="btn-secondary" style="flex:1;min-width:70px;" onclick="app.closeImportPreview()">İptal</button>
                 <button type="button" class="btn-secondary" style="flex:1;min-width:70px;font-size:0.82rem;" onclick="app.toggleAllImportItems(false)">Kaldır</button>
@@ -1662,7 +1672,8 @@
             this.initGPA();
             this.loadPomoStats();
 
-            try { localStorage.removeItem('OgrenciAsistaniApiKey'); } catch (e) {}
+            // Eski sürümlerde saklanmış olabilecek yapay zeka API anahtarlarını cihazdan temizle
+            try { localStorage.removeItem('OgrenciAsistaniApiKey'); localStorage.removeItem('OgrenciAsistaniImportKey'); } catch (e) {}
 
             const today = this.todayKey();
             const taskDate = this.$('task-date');
@@ -1712,8 +1723,12 @@
             }
         },
 
-        makeId(offset = 0) {
-            return Date.now() + offset + Math.floor(Math.random() * 1000);
+        // Oturum içinde kesin benzersiz, artan kimlik. (Eski "Date.now() + sıra + rastgele" yöntemi toplu
+        // eklemede aynı kimliği iki kez üretebiliyordu; o zaman düzenle/sil yanlış kayda gidiyordu.)
+        makeId() {
+            const now = Date.now();
+            this._lastId = now > (this._lastId || 0) ? now : this._lastId + 1;
+            return this._lastId;
         },
 
         todayKey(date = new Date()) {
@@ -1966,17 +1981,27 @@
             };
         },
 
+        // Aynı kimliği taşıyan kayıtlara yeni kimlik ver (eski sürümün ürettiği çakışmaları onarır)
+        uniqueIds(list) {
+            const seen = new Set();
+            list.forEach(it => {
+                if (seen.has(it.id)) it.id = this.makeId();
+                seen.add(it.id);
+            });
+            return list;
+        },
+
         normalizeData(input = {}) {
             const src = input && typeof input === 'object' ? input : {};
             return {
                 ...this.defaultData(),
                 theme: src.theme === 'light' ? 'light' : 'dark',
-                schedule: this.normalizeSchedule(src.schedule),
-                tasks: this.normalizeTasks(src.tasks),
-                notes: this.normalizeNotes(src.notes),
+                schedule: this.uniqueIds(this.normalizeSchedule(src.schedule)),
+                tasks: this.uniqueIds(this.normalizeTasks(src.tasks)),
+                notes: this.uniqueIds(this.normalizeNotes(src.notes)),
                 gpaRows: this.normalizeGpaRows(src.gpaRows),
-                flashcards: this.normalizeFlashcards(src.flashcards),
-                habits: this.normalizeHabits(src.habits),
+                flashcards: this.uniqueIds(this.normalizeFlashcards(src.flashcards)),
+                habits: this.uniqueIds(this.normalizeHabits(src.habits)),
                 studyLog: this.normalizeStudyLog(src.studyLog)
             };
         },
@@ -2482,52 +2507,25 @@
         },
 
         // ═════════ IMPORT FROM IMAGE ═════════
+        // Fotoğraftaki ders programı tablosu tamamen cihazda okunur (schedule-reader.js + uygulamayla gelen yazı tanıma).
+        // Hiçbir dış servise istek atılmaz, anahtar gerekmez.
         _importItems: [],
+        _importPeriods: [],
         _importFile: null,
+        _importRun: 0,
 
         openImportModal() {
             const modal = this.$('import-modal');
-            if (!modal) return;
-            this._loadRememberedKey();
-            modal.style.display = 'flex';
-        },
-
-        _loadRememberedKey() {
-            let saved = null;
-            try { saved = JSON.parse(localStorage.getItem('OgrenciAsistaniImportKey') || 'null'); } catch (e) {}
-            const remember = this.$('import-remember-key');
-            const provSel = this.$('import-provider');
-            const keyInput = this.$('import-api-key');
-            const modelInput = this.$('import-model');
-            if (saved && saved.key) {
-                if (provSel && (saved.provider === 'claude' || saved.provider === 'deepseek')) provSel.value = saved.provider;
-                this.onImportProviderChange();
-                if (modelInput && saved.model) modelInput.value = saved.model;
-                if (keyInput) keyInput.value = saved.key;
-                if (remember) remember.checked = true;
-            } else if (remember) {
-                remember.checked = false;
-            }
-        },
-
-        _persistRememberedKey(provider, key) {
-            const remember = this.$('import-remember-key');
-            try {
-                if (remember && remember.checked) {
-                    const model = this.$('import-model')?.value.trim() || '';
-                    localStorage.setItem('OgrenciAsistaniImportKey', JSON.stringify({ provider, key, model }));
-                } else {
-                    localStorage.removeItem('OgrenciAsistaniImportKey');
-                }
-            } catch (e) {}
+            if (modal) modal.style.display = 'flex';
         },
 
         closeImportModal() {
+            this._importRun++; // süren bir okuma varsa sonucu yok sayılır
             const modal = this.$('import-modal');
             if (modal) modal.style.display = 'none';
             this._importFile = null;
             const sb = this.$('import-status-box');
-            if (sb) { sb.style.display = 'none'; sb.innerHTML = ''; sb.className = ''; }
+            if (sb) { sb.style.display = 'none'; sb.textContent = ''; sb.className = ''; }
             const prev = this.$('import-img-preview');
             if (prev) { prev.style.display = 'none'; prev.src = ''; }
             const dt = this.$('import-drop-text');
@@ -2535,24 +2533,11 @@
             const dz = this.$('import-drop-zone');
             if (dz) dz.classList.remove('has-file');
             const btn = this.$('import-analyze-btn');
-            if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Analiz Et'; }
+            if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Programı Oku'; }
             const fi = this.$('import-file-input');
             if (fi) fi.value = '';
             const ci = this.$('import-camera-input');
             if (ci) ci.value = '';
-        },
-
-        toggleApiKeyVisibility() {
-            const input = this.$('import-api-key');
-            const toggle = this.$('api-key-toggle');
-            if (!input) return;
-            if (input.type === 'password') {
-                input.type = 'text';
-                if (toggle) toggle.textContent = '🙈';
-            } else {
-                input.type = 'password';
-                if (toggle) toggle.textContent = '👁️';
-            }
         },
 
         openImportCamera() {
@@ -2562,8 +2547,9 @@
             input.click();
         },
 
-        // Büyük kamera fotoğraflarını en uzun kenarı maxDim olacak şekilde JPEG'e küçültür
-        _resizeImageFile(file, maxDim = 2000) {
+        // Çok büyük kamera fotoğraflarını en uzun kenarı maxDim olacak şekilde JPEG'e küçültür.
+        // Küçük yazılar (ders saatleri, öğretmen adları) okunabilsin diye çözünürlük yüksek tutulur.
+        _resizeImageFile(file, maxDim = 3000) {
             return new Promise((resolve) => {
                 const url = URL.createObjectURL(file);
                 const img = new Image();
@@ -2572,7 +2558,7 @@
                     const w = img.naturalWidth, h = img.naturalHeight;
                     if (!w || !h) return resolve(file);
                     const scale = Math.min(1, maxDim / Math.max(w, h));
-                    const smallEnough = scale === 1 && file.size <= 4 * 1024 * 1024;
+                    const smallEnough = scale === 1 && file.size <= 5 * 1024 * 1024;
                     if (smallEnough && /^image\/(jpeg|png|webp)$/.test(file.type)) return resolve(file);
                     try {
                         const canvas = document.createElement('canvas');
@@ -2586,7 +2572,7 @@
                             if (!blob) return resolve(file);
                             const name = String(file.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg';
                             resolve(new File([blob], name, { type: 'image/jpeg' }));
-                        }, 'image/jpeg', 0.9);
+                        }, 'image/jpeg', 0.92);
                     } catch (e) {
                         resolve(file);
                     }
@@ -2601,25 +2587,25 @@
             if (file.type && !file.type.startsWith('image/')) {
                 this.showToast('Lütfen bir resim dosyası seçin!', 'warning'); return;
             }
-            if (file.size > 25 * 1024 * 1024) {
-                this.showToast('Fotoğraf 25 MB altında olmalı.', 'warning'); return;
+            if (file.size > 30 * 1024 * 1024) {
+                this.showToast('Fotoğraf 30 MB altında olmalı.', 'warning'); return;
             }
             const dt = this.$('import-drop-text');
+            const resetText = () => { if (dt) dt.innerHTML = 'Fotoğraf seçin veya buraya sürükleyin<br><small>JPG, PNG, WEBP desteklenir</small>'; };
             if (dt) dt.innerHTML = '⏳ Fotoğraf hazırlanıyor...';
 
-            const prepared = await this._resizeImageFile(file, 2000);
+            const prepared = await this._resizeImageFile(file);
             if (!/^image\/(jpeg|png|webp|gif)$/.test(prepared.type)) {
-                if (dt) dt.innerHTML = 'Fotoğraf seçin veya buraya sürükleyin<br><small>JPG, PNG, WEBP desteklenir</small>';
+                resetText();
                 this.showToast('Bu fotoğraf biçimi açılamadı (ör. HEIC). Lütfen JPG olarak kaydedip tekrar deneyin.', 'warning');
-                return;
-            }
-            if (prepared.size > 8 * 1024 * 1024) {
-                if (dt) dt.innerHTML = 'Fotoğraf seçin veya buraya sürükleyin<br><small>JPG, PNG, WEBP desteklenir</small>';
-                this.showToast('Fotoğraf çok büyük. Daha düşük çözünürlükte deneyin.', 'warning');
                 return;
             }
 
             this._importFile = prepared;
+            const sb = this.$('import-status-box');
+            if (sb) { sb.style.display = 'none'; sb.textContent = ''; }
+            const btn = this.$('import-analyze-btn');
+            if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Programı Oku'; }
             const reader = new FileReader();
             reader.onload = (e) => {
                 const prev = this.$('import-img-preview');
@@ -2632,406 +2618,229 @@
             reader.readAsDataURL(prepared);
         },
 
-        async processScheduleImage() {
-            const provider = this.$('import-provider')?.value || 'claude';
-            const apiKey = this.$('import-api-key')?.value.trim();
-            if (!apiKey) { this.showToast('Lütfen API anahtarını girin!', 'warning'); return; }
-            if (!this._importFile) { this.showToast('Lütfen bir fotoğraf seçin!', 'warning'); return; }
-            this._lastOcrText = '';
-            this._lastAiText = '';
-            // "Hatırla" seçiliyse anahtarı hemen kaydet (analiz başarısız olsa bile)
-            this._persistRememberedKey(provider, apiKey);
+        // Okuyucu (tablo analizi + yerel yazı tanıma) yalnızca gerektiğinde yüklenir
+        _loadScheduleReader() {
+            if (window.ScheduleReader) return Promise.resolve();
+            if (this._readerLoading) return this._readerLoading;
+            this._readerLoading = new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = 'schedule-reader.js';
+                s.onload = () => resolve();
+                s.onerror = () => { this._readerLoading = null; reject(new Error('Okuyucu yüklenemedi. Sayfayı yenileyip tekrar deneyin.')); };
+                document.head.appendChild(s);
+            });
+            return this._readerLoading;
+        },
 
-            const btn = this.$('import-analyze-btn');
-            if (btn) { btn.disabled = true; btn.innerHTML = '<span class="import-spinner"></span> Analiz ediliyor...'; }
-            const sb = this.$('import-status-box');
-            if (sb) {
-                sb.className = 'import-status-box';
-                sb.style.display = 'block';
-                sb.innerHTML = '🤖 Yapay zeka ders programını okuyor, lütfen bekleyin...';
+        _importProgressText(p) {
+            switch (p && p.phase) {
+                case 'prepare': return '🖼️ Fotoğraf hazırlanıyor...';
+                case 'grid': return '📐 Tablo çizgileri aranıyor...';
+                case 'engine': return `⚙️ Yazı tanıma hazırlanıyor... %${Math.round((p.progress || 0) * 100)}`;
+                case 'layout': return '🔎 Günler ve sütunlar bulunuyor...';
+                case 'header': return `⏰ Ders saatleri okunuyor (${p.done}/${p.total})...`;
+                case 'cells': return `📖 Dersler okunuyor... %${Math.round((p.done / Math.max(1, p.total)) * 100)}`;
+                default: return '⏳ Okunuyor...';
             }
+        },
 
+        async processScheduleImage() {
+            if (!this._importFile) { this.showToast('Önce ders programının fotoğrafını çekin veya seçin!', 'warning'); return; }
+            const run = ++this._importRun;
+            const btn = this.$('import-analyze-btn');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<span class="import-spinner"></span> Okunuyor...'; }
+            const sb = this.$('import-status-box');
+            const status = (text, isError = false) => {
+                if (!sb || run !== this._importRun) return;
+                sb.className = 'import-status-box' + (isError ? ' error' : '');
+                sb.style.display = 'block';
+                sb.textContent = text;
+            };
+            status('🖼️ Fotoğraf hazırlanıyor...');
             try {
-                const base64 = await this._fileToBase64(this._importFile);
-                const mediaType = this._importFile.type;
-                const prompt = this._scheduleExtractionPrompt();
-
-                const text = provider === 'deepseek'
-                    ? await this._callDeepSeek(apiKey, base64, mediaType, prompt)
-                    : await this._callClaude(apiKey, base64, mediaType, prompt);
-
-                this._lastAiText = text;
-                const parsed = this._extractJsonArray(text);
-                if (parsed.length === 0) {
-                    throw new Error('Hiç ders tespit edilemedi. Daha net veya farklı bir fotoğraf deneyin.');
-                }
-
-                const colorPalette = ['#4f46e5','#10b981','#ef4444','#f59e0b','#3b82f6','#ec4899','#8b5cf6','#14b8a6','#f97316','#84cc16'];
-                const colorByName = {};
-
-                const valid = parsed
-                    .map((it, idx) => {
-                        if (!it || typeof it !== 'object') return null;
-                        const day = this._normalizeDayName(it.day);
-                        const name = this.safeText(it.name, 100);
-                        const start = this.normalizeTime(it.start);
-                        const end = this.normalizeTime(it.end);
-                        if (!day || !name || !this.isValidTimeRange(start, end)) return null;
-                        const hasConflict = !!this.data.schedule.find(c =>
-                            c.day === day && !(end <= c.start || start >= c.end)
-                        );
-                        // Aynı ders her gün aynı renkte görünsün
-                        const colorKey = name.toLocaleUpperCase('tr-TR');
-                        if (!colorByName[colorKey]) colorByName[colorKey] = colorPalette[Object.keys(colorByName).length % colorPalette.length];
-                        return {
-                            id: this.makeId(idx),
-                            day,
-                            name,
-                            teacher: this.safeText(it.teacher, 100),
-                            start, end,
-                            color: colorByName[colorKey],
-                            _selected: !hasConflict,
-                            _conflict: hasConflict
-                        };
-                    }).filter(Boolean);
-
-                if (valid.length === 0) throw new Error('Geçerli formatta ders bulunamadı. Lütfen fotoğrafı kontrol edin.');
-
-                this._importItems = valid;
+                await this._loadScheduleReader();
+                const result = await window.ScheduleReader.read(this._importFile, { onProgress: p => status(this._importProgressText(p)) });
+                if (run !== this._importRun) return; // pencere bu sırada kapatıldı
+                const items = this._prepareImportItems(result.items);
+                if (!items.length) throw new Error('Tabloda ders bulunamadı. Programı düz, iyi ışıkta ve tamamı kadrajda olacak şekilde tekrar çekin.');
+                this._importItems = items;
+                this._importPeriods = (result.periods || []).map(p => ({ start: p.start, end: p.end, estimated: !!p.estimated }));
                 this.closeImportModal();
                 this.showImportPreview();
-
             } catch (err) {
-                const sb = this.$('import-status-box');
-                if (sb) {
-                    sb.className = 'import-status-box error';
-                    let html = `❌ ${this.escapeHtml(err.message)}`;
-                    // DeepSeek/OCR yolunda okunan ham metni göster (teşhis + şeffaflık)
-                    const preStyle = 'white-space:pre-wrap;font-size:0.7rem;line-height:1.3;max-height:30vh;overflow:auto;margin-top:0.4rem;background:rgba(0,0,0,0.2);padding:0.5rem;border-radius:6px;';
-                    if (provider === 'deepseek' && this._lastOcrText && this._lastOcrText.trim()) {
-                        html += `<details style="margin-top:0.6rem;"><summary style="cursor:pointer;font-size:0.8rem;">🔎 Fotoğraftan okunan metni göster</summary><pre style="${preStyle}">${this.escapeHtml(this._lastOcrText)}</pre></details>`;
-                    }
-                    if (this._lastAiText && this._lastAiText.trim()) {
-                        html += `<details style="margin-top:0.4rem;"><summary style="cursor:pointer;font-size:0.8rem;">🤖 Yapay zeka yanıtını göster</summary><pre style="${preStyle}">${this.escapeHtml(this._lastAiText.slice(0, 4000))}</pre></details>`;
-                    }
-                    sb.innerHTML = html;
-                }
-                const btn = this.$('import-analyze-btn');
+                if (run !== this._importRun) return;
+                status('❌ ' + (err && err.message ? err.message : 'Okuma başarısız oldu. Tekrar deneyin.'), true);
                 if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Tekrar Dene'; }
             }
         },
 
-        // Yapay zeka yanıtından ders dizisini güvenle çıkarır (```json blokları, açıklama metni, {"dersler":[...]} biçimi)
-        _extractJsonArray(text) {
-            const raw = String(text || '').replace(/```(?:json)?/gi, '').trim();
-            const pick = (val) => {
-                if (Array.isArray(val)) return val;
-                if (val && typeof val === 'object') return Object.values(val).find(Array.isArray) || null;
-                return null;
-            };
-            try { const v = pick(JSON.parse(raw)); if (v) return v; } catch (e) {}
-            const start = raw.indexOf('['), end = raw.lastIndexOf(']');
-            if (start !== -1 && end > start) {
-                try { const v = pick(JSON.parse(raw.slice(start, end + 1))); if (v) return v; } catch (e) {}
-            }
-            throw new Error('Yapay zeka yanıtı okunamadı (geçersiz JSON). Lütfen tekrar deneyin.');
-        },
-
-        // "Pa", "pzt", "CUMA" gibi yazımları uygulamanın gün adlarına çevirir
-        _normalizeDayName(value) {
-            const s = String(value ?? '').trim().replace(/\.$/, '').toLocaleLowerCase('tr-TR');
-            const map = [
-                ['Pazartesi', ['pazartesi', 'pzt', 'pts', 'pa', 'pt']],
-                ['Salı', ['salı', 'sali', 'sal', 'sa']],
-                ['Çarşamba', ['çarşamba', 'carsamba', 'çar', 'car', 'ça', 'ca', 'çrş']],
-                ['Perşembe', ['perşembe', 'persembe', 'per', 'pe', 'prş']],
-                ['Cuma', ['cuma', 'cum', 'cu']],
-                ['Cumartesi', ['cumartesi', 'cmt', 'cts', 'ct']],
-                ['Pazar', ['pazar', 'paz', 'pz']]
-            ];
-            for (const [day, keys] of map) if (keys.includes(s)) return day;
-            return '';
-        },
-
-        _scheduleExtractionPrompt() {
-            return `Bu bir haftalık okul/üniversite ders programıdır (tablo/grid olabilir). Tüm dersleri JSON dizisi olarak çıkar. Her ders nesnesi tam olarak şu alanları içermeli:
-- "day": Türkçe gün adı — yalnızca şunlardan biri: Pazartesi, Salı, Çarşamba, Perşembe, Cuma, Cumartesi, Pazar
-- "name": Ders adı (string)
-- "teacher": Öğretmen/hoca adı (string, yoksa boş string "")
-- "start": Başlangıç saati "HH:MM" formatında (örn: "09:00")
-- "end": Bitiş saati "HH:MM" formatında (örn: "09:40")
-
-KURALLAR:
-1) Günler genelde solda satır, ders saatleri/sıra üstte sütun olur. Türkçe gün kısaltmalarını çöz: Pzt/Pa/Pt=Pazartesi, Sal/Sa=Salı, Çar/Ça=Çarşamba, Per/Pe=Perşembe, Cum/Cu=Cuma, Cmt/Ct=Cumartesi, Paz/Pz=Pazar.
-2) Boş hücreleri ve "teneffüs/öğle arası/yemek/İmza/Sınıf Öğrt." gibi ders olmayan satır ve kutuları atla.
-3) Sütun başlıklarında saat aralıkları (ör. "8.40 - 9.20") varsa saatleri MUTLAKA oradan al. Yalnızca ders saati numarası (1,2,3...) varsa ve hiç saat yoksa, saatleri ŞÖYLE tahmin et: 1. ders 09:00-09:40, sonra her ders 40 dakika ve aralarda 10 dakika teneffüs (2. ders 09:50-10:30, 3. ders 10:40-11:20, ...). Numara hangi sütundaysa o saat aralığını kullan.
-4) Aynı ders birden çok ardışık saatte ise her saati ayrı nesne yap (ya da bitişik saatleri birleştir).
-5) Metin OCR'dan gelmiş olabilir; harf hatalarını mantıkla düzelt, emin olamadığın hücreyi atla ama mümkün olduğunca çok ders çıkar.
-
-Yalnızca geçerli bir JSON dizisi döndür, başka hiçbir açıklama/metin ekleme. Gerçekten hiç ders yoksa boş dizi [] döndür.`;
-        },
-
-        async _callClaude(apiKey, base64, mediaType, prompt) {
-            const resp = await fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': apiKey,
-                    'anthropic-version': '2023-06-01',
-                    'anthropic-dangerous-direct-browser-access': 'true'
-                },
-                body: JSON.stringify({
-                    model: 'claude-haiku-4-5-20251001',
-                    max_tokens: 2048,
-                    messages: [{
-                        role: 'user',
-                        content: [
-                            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-                            { type: 'text', text: prompt }
-                        ]
-                    }]
-                })
-            });
-            if (!resp.ok) {
-                const errData = await resp.json().catch(() => ({}));
-                throw new Error(errData.error?.message || `Claude API hatası (${resp.status})`);
-            }
-            const result = await resp.json();
-            return result.content?.[0]?.text || '';
-        },
-
-        async _callDeepSeek(apiKey, base64, mediaType, prompt) {
-            const model = this.$('import-model')?.value.trim() || 'deepseek-chat';
-            // DeepSeek API'si görsel kabul etmez; önce cihazda OCR ile metni ve konumları çıkar
-            const ocr = await this._ocrImage(`data:${mediaType};base64,${base64}`);
-            if (!ocr.text || ocr.text.trim().length < 3) {
-                throw new Error('Fotoğraftan metin okunamadı (OCR boş). Daha net, düz ve iyi aydınlatılmış bir fotoğraf deneyin.');
-            }
-            const sb = this.$('import-status-box');
-            if (sb) sb.innerHTML = '🤖 DeepSeek ders programını düzenliyor...';
-
-            const layoutPart = ocr.layout ? `1) KONUMLU OCR — her kelime "kelime@xN" biçiminde; N kelimenin yatay konumu, "y=" satırın dikey konumu${ocr.width ? ` (görüntü genişliği ≈ ${ocr.width}px)` : ''}:
-- Üst satırlardaki ders saati numaraları (1, 2, 3...) ve saat aralıkları (ör. 8.40 - 9.20) SÜTUN BAŞLIKLARIDIR; x değerleri sütunların merkezidir. Saatleri bu başlıklardan al.
-- Soldaki gün kısaltmaları (Pa, Sa, Ça, Pe, Cu...) SATIR BAŞLIKLARIDIR; her dersi y değeri en yakın gün satırına ata.
-- Her dersi x değeri en yakın sütuna ata. Bir ders iki sütunun tam ortasındaysa birleşik (çok saatlik) derstir: başlangıcı soldaki sütunun başlangıcı, bitişi sağdaki sütunun bitişidir.
-- Ders adının hemen altındaki küçük kelime genelde öğretmen adıdır.
-- "İmza", "Sınıf Öğrt." gibi satırları ve boş satırları atla.
-
-"""
-${ocr.layout}
-"""
-
-2) DÜZ OCR METNİ (yedek):` : 'OCR METNİ:';
-
-            const userText = `${prompt}
-
-Aşağıda bir ders programı fotoğrafının OCR çıktısı var. Metin gürültülü olabilir; harf hatalarını mantıkla düzelt.
-
-${layoutPart}
-"""
-${ocr.text}
-"""`;
-
-            const resp = await fetch('https://api.deepseek.com/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    model,
-                    max_tokens: 4096,
-                    temperature: 0,
-                    messages: [
-                        { role: 'system', content: 'Ders programı fotoğraflarından OCR ile çıkarılan metni yapılandırılmış JSON\'a çeviren bir asistansın. Yalnızca geçerli bir JSON dizisi döndür.' },
-                        { role: 'user', content: userText }
-                    ]
-                })
-            });
-            if (!resp.ok) {
-                const errData = await resp.json().catch(() => ({}));
-                throw new Error(errData.error?.message || `DeepSeek API hatası (${resp.status})`);
-            }
-            const result = await resp.json();
-            return result.choices?.[0]?.message?.content || '';
-        },
-
-        // Tesseract.js OCR motorunu CDN'den tek seferlik yükler
-        _ensureTesseract() {
-            if (window.Tesseract) return Promise.resolve();
-            if (this._tesseractLoading) return this._tesseractLoading;
-            this._tesseractLoading = new Promise((resolve, reject) => {
-                const sb = this.$('import-status-box');
-                if (sb) sb.innerHTML = '⏬ OCR motoru indiriliyor (ilk kullanımda biraz sürebilir)...';
-                const s = document.createElement('script');
-                s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
-                s.onload = () => resolve();
-                s.onerror = () => { this._tesseractLoading = null; reject(new Error('OCR motoru yüklenemedi. İnternet bağlantınızı kontrol edin.')); };
-                document.head.appendChild(s);
-            });
-            return this._tesseractLoading;
-        },
-
-        // Görüntüyü OCR için iyileştirir: büyüt + gri tonlama + kontrast
-        _preprocessForOcr(imageData) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => {
-                    try {
-                        const baseW = img.naturalWidth || img.width;
-                        const baseH = img.naturalHeight || img.height;
-                        if (!baseW || !baseH) return resolve(imageData);
-                        // Küçük görüntüleri büyüt (hedef ~1800px genişlik), çok büyükse koru
-                        const scale = Math.min(3, Math.max(1, 1800 / baseW));
-                        const w = Math.round(baseW * scale);
-                        const h = Math.round(baseH * scale);
-                        const canvas = document.createElement('canvas');
-                        canvas.width = w; canvas.height = h;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, w, h);
-                        const id = ctx.getImageData(0, 0, w, h);
-                        const d = id.data;
-                        const contrast = 1.5, intercept = 128 * (1 - contrast);
-                        for (let i = 0; i < d.length; i += 4) {
-                            let g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-                            g = g * contrast + intercept;
-                            g = g < 0 ? 0 : g > 255 ? 255 : g;
-                            d[i] = d[i + 1] = d[i + 2] = g;
-                        }
-                        ctx.putImageData(id, 0, 0);
-                        resolve({ src: canvas.toDataURL('image/png'), width: w });
-                    } catch (e) {
-                        resolve({ src: imageData, width: 0 }); // başarısız olursa orijinali kullan
-                    }
+        _prepareImportItems(list) {
+            const validDays = ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
+            const palette = ['#4f46e5','#10b981','#ef4444','#f59e0b','#3b82f6','#ec4899','#8b5cf6','#14b8a6','#f97316','#84cc16'];
+            const colorByName = {};
+            return (Array.isArray(list) ? list : []).map(it => {
+                if (!it || typeof it !== 'object' || !validDays.includes(it.day)) return null;
+                const name = this.safeText(it.name, 100);
+                const start = this.normalizeTime(it.start);
+                const end = this.normalizeTime(it.end);
+                if (!name || !this.isValidTimeRange(start, end)) return null;
+                // Aynı ders her gün aynı renkte görünsün
+                const key = name.toLocaleUpperCase('tr-TR');
+                if (!colorByName[key]) colorByName[key] = palette[Object.keys(colorByName).length % palette.length];
+                return {
+                    day: it.day, name, teacher: this.safeText(it.teacher, 100), start, end,
+                    color: colorByName[key],
+                    period: Number.isInteger(it.period) ? it.period : null,
+                    periodEnd: Number.isInteger(it.periodEnd) ? it.periodEnd : null,
+                    dayGuessed: !!it.dayGuessed,
+                    _selected: true, _timeEdited: false
                 };
-                img.onerror = () => resolve({ src: imageData, width: 0 });
-                img.src = imageData;
-            });
+            }).filter(Boolean);
         },
 
-        // Tesseract sürümünden bağımsız olarak tüm kelimeleri (bbox ile) toplar
-        _collectOcrWords(data) {
-            if (Array.isArray(data?.words) && data.words.length) return data.words;
-            const out = [];
-            (data?.blocks || []).forEach(b => (b.paragraphs || []).forEach(p =>
-                (p.lines || []).forEach(l => (l.words || []).forEach(w => out.push(w)))));
-            return out;
+        _importConflict(item) {
+            if (this.$('import-replace-existing')?.checked) return false;
+            return this.data.schedule.some(c => c.day === item.day && !(item.end <= c.start || item.start >= c.end));
         },
 
-        // OCR kelimelerini konumlarıyla satırlara dizer; tablo yapısı (sütun/satır) korunur
-        _ocrLayoutText(data) {
-            const words = this._collectOcrWords(data)
-                .filter(w => w && w.bbox && String(w.text || '').trim() && (w.confidence == null || w.confidence >= 25))
-                .map(w => ({
-                    t: String(w.text).trim(),
-                    x: Math.round((w.bbox.x0 + w.bbox.x1) / 2),
-                    y: Math.round((w.bbox.y0 + w.bbox.y1) / 2),
-                    h: Math.max(1, w.bbox.y1 - w.bbox.y0)
-                }))
-                .sort((a, b) => a.y - b.y);
-            const rows = [];
-            words.forEach(wd => {
-                const last = rows[rows.length - 1];
-                if (last && Math.abs(last.y - wd.y) <= Math.max(8, last.h * 0.6)) last.items.push(wd);
-                else rows.push({ y: wd.y, h: wd.h, items: [wd] });
-            });
-            return rows.map(r => `y=${r.y}: ` + r.items.sort((a, b) => a.x - b.x).map(i => `${i.t}@x${i.x}`).join('  ')).join('\n');
-        },
-
-        // Fotoğraftan metin + konumlu düzen çıkarır (Türkçe + İngilizce)
-        async _ocrImage(imageData) {
-            await this._ensureTesseract();
-            const sb = this.$('import-status-box');
-            if (sb) sb.innerHTML = '🖼️ Fotoğraf OCR için hazırlanıyor...';
-            const processed = await this._preprocessForOcr(imageData);
-            const logger = (m) => {
-                if (sb && m.status === 'recognizing text') {
-                    sb.innerHTML = `🔎 Fotoğraf okunuyor (OCR)... %${Math.round((m.progress || 0) * 100)}`;
-                }
-            };
-            let data = null;
-            let worker = null;
-            try {
-                worker = await Tesseract.createWorker('tur+eng', 1, { logger });
-                // PSM 11: seyrek metin — tablo hücrelerindeki dağınık yazıları daha iyi bulur
-                try { await worker.setParameters({ tessedit_pageseg_mode: '11' }); } catch (e) {}
-                data = (await worker.recognize(processed.src, {}, { text: true, blocks: true }))?.data;
-            } catch (e) {
-                // Worker API başarısızsa basit recognize'a düş
-                data = (await Tesseract.recognize(processed.src, 'tur+eng', { logger }))?.data;
-            } finally {
-                if (worker) { try { await worker.terminate(); } catch (e) {} }
-            }
-            const text = data?.text || '';
-            this._lastOcrText = text;
-            return { text, layout: this._ocrLayoutText(data), width: processed.width };
-        },
-
-        onImportProviderChange() {
-            const provider = this.$('import-provider')?.value || 'claude';
-            const isDeepSeek = provider === 'deepseek';
-            const label = this.$('import-api-key-label');
-            const hint = this.$('import-api-key-hint');
-            const note = this.$('import-api-key-note');
-            const input = this.$('import-api-key');
-            const modelGroup = this.$('import-model-group');
-            if (modelGroup) modelGroup.style.display = isDeepSeek ? 'block' : 'none';
-            if (label) label.childNodes[0].nodeValue = isDeepSeek ? 'DeepSeek API Anahtarı ' : 'Claude API Anahtarı ';
-            if (hint) hint.textContent = isDeepSeek ? "platform.deepseek.com'dan alabilirsiniz" : "anthropic.com'dan alabilirsiniz";
-            if (input) input.placeholder = isDeepSeek ? 'sk-...' : 'sk-ant-api03-...';
-            if (note) note.textContent = isDeepSeek
-                ? '🔒 Anahtar bu analiz isteği için DeepSeek API’ye gönderilir ve bu uygulamada kalıcı olarak saklanmaz.'
-                : '🔒 Anahtar bu analiz isteği için Anthropic API’ye gönderilir ve bu uygulamada kalıcı olarak saklanmaz.';
-        },
-
-        _fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result.split(',')[1]);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
+        _importItemUncertain(item) {
+            if (item._timeEdited) return false;
+            const p = this._importPeriods;
+            const est = (n) => !!(n && p[n - 1] && p[n - 1].estimated);
+            return !!item.dayGuessed || est(item.period) || est(item.periodEnd);
         },
 
         showImportPreview() {
             const modal = this.$('import-preview-modal');
             if (!modal) return;
+            const rep = this.$('import-replace-existing');
+            if (rep) rep.checked = false;
+            const repRow = this.$('import-replace-row');
+            if (repRow) repRow.style.display = this.data.schedule.length ? 'flex' : 'none';
+            // Mevcut derslerle çakışanlar başlangıçta seçili gelmesin
+            this._importItems.forEach(it => { if (this._importConflict(it)) it._selected = false; });
+            const box = this.$('import-periods-box');
+            if (box) box.open = this._importPeriods.some(p => p.estimated);
             modal.style.display = 'flex';
-            const countEl = this.$('import-preview-count');
-            if (countEl) {
-                const conflicts = this._importItems.filter(i => i._conflict).length;
-                countEl.textContent = `${this._importItems.length} ders bulundu.${conflicts ? ` (${conflicts} çakışmalı ders işaretsiz)` : ' Eklemek istediklerini seç:'}`;
-            }
+            this._renderImportPeriods();
+            this._renderImportPreviewList();
+        },
+
+        _updateImportCount() {
+            const el = this.$('import-preview-count');
+            if (!el) return;
+            const total = this._importItems.length;
+            const sel = this._importItems.filter(i => i._selected).length;
+            const unc = this._importItems.filter(i => this._importItemUncertain(i)).length;
+            el.textContent = `${total} ders bulundu, ${sel} tanesi seçili. ` + (unc ? `❓ işaretli ${unc} dersin gün/saatini kontrol et.` : 'Hatalı bir yer varsa düzeltip kaydet.');
+        },
+
+        _renderImportPeriods() {
+            const box = this.$('import-periods-box');
+            const listEl = this.$('import-periods-list');
+            const note = this.$('import-periods-note');
+            const periods = this._importPeriods || [];
+            if (!box || !listEl) return;
+            if (!periods.length) { box.style.display = 'none'; return; }
+            box.style.display = 'block';
+            const estimated = periods.filter(p => p.estimated).length;
+            box.classList.toggle('has-estimate', estimated > 0);
+            if (note) note.textContent = estimated ? `— ${estimated} tanesi okunamadı, kontrol et` : '';
+            listEl.innerHTML = periods.map((p, i) => `
+                <div class="import-period-row${p.estimated ? ' estimated' : ''}">
+                    <span class="import-period-no">${i + 1}.</span>
+                    <input type="time" value="${this.escapeAttr(p.start)}" aria-label="${i + 1}. ders başlangıç${p.estimated ? ' (tahmini)' : ''}" onchange="app.updateImportPeriod(${i}, 'start', this.value)">
+                    <span aria-hidden="true">–</span>
+                    <input type="time" value="${this.escapeAttr(p.end)}" aria-label="${i + 1}. ders bitiş${p.estimated ? ' (tahmini)' : ''}" onchange="app.updateImportPeriod(${i}, 'end', this.value)">
+                </div>`).join('');
+        },
+
+        // Bir ders saatini düzeltmek o saatte başlayan/biten bütün dersleri günceller
+        updateImportPeriod(i, field, value) {
+            const p = this._importPeriods[i];
+            const t = this.normalizeTime(value);
+            if (!p || !t || (field !== 'start' && field !== 'end')) return;
+            p[field] = t;
+            p.estimated = false;
+            this._importItems.forEach(it => {
+                if (it._timeEdited) return;
+                if (field === 'start' && it.period === i + 1) it.start = t;
+                if (field === 'end' && it.periodEnd === i + 1) it.end = t;
+            });
+            this._renderImportPeriods();
             this._renderImportPreviewList();
         },
 
         _renderImportPreviewList() {
             const list = this.$('import-preview-list');
             if (!list) return;
+            this._updateImportCount();
             if (!this._importItems.length) {
                 list.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:1rem;">Ders bulunamadı.</div>';
                 return;
             }
-            list.innerHTML = this._importItems.map((item, i) => `
-                <div class="import-preview-item${item._conflict ? ' import-conflict' : ''}">
-                    <input type="checkbox" ${item._selected ? 'checked' : ''} onchange="app._importItems[${i}]._selected=this.checked">
+            const days = ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
+            list.innerHTML = this._importItems.map((it, i) => {
+                const conflict = this._importConflict(it);
+                const unc = this._importItemUncertain(it);
+                return `
+                <div class="import-preview-item${conflict ? ' import-conflict' : ''}${unc ? ' import-uncertain' : ''}">
+                    <input type="checkbox" ${it._selected ? 'checked' : ''} aria-label="${this.escapeAttr(it.name)} dersini ekle" onchange="app.toggleImportItem(${i}, this.checked)">
                     <div class="ipi-body">
-                        <div class="ipi-name">
-                            <span class="ipi-color-dot" style="background:${this.escapeAttr(item.color)};display:inline-block;"></span>
-                            ${this.escapeHtml(item.name)}
-                            ${item._conflict ? '<span class="conflict-badge">⚠️ Çakışma</span>' : ''}
+                        <div class="ipi-row">
+                            <span class="ipi-color-dot" style="background:${this.escapeAttr(it.color)};"></span>
+                            <input class="ipi-input ipi-name-input" value="${this.escapeAttr(it.name)}" maxlength="100" aria-label="Ders adı" oninput="app.updateImportItem(${i}, 'name', this.value)">
                         </div>
-                        <div class="ipi-detail">
-                            📅 ${this.escapeHtml(item.day)} &nbsp; ⏱️ ${item.start} – ${item.end}${item.teacher ? ' &nbsp; 👤 ' + this.escapeHtml(item.teacher) : ''}
+                        <div class="ipi-row">
+                            <select class="ipi-input" aria-label="Gün" onchange="app.updateImportItem(${i}, 'day', this.value)">${days.map(d => `<option value="${d}"${d === it.day ? ' selected' : ''}>${d}</option>`).join('')}</select>
                         </div>
+                        <div class="ipi-row">
+                            <input class="ipi-input" type="time" value="${this.escapeAttr(it.start)}" aria-label="Başlangıç saati" onchange="app.updateImportItem(${i}, 'start', this.value)">
+                            <span aria-hidden="true">–</span>
+                            <input class="ipi-input" type="time" value="${this.escapeAttr(it.end)}" aria-label="Bitiş saati" onchange="app.updateImportItem(${i}, 'end', this.value)">
+                        </div>
+                        <div class="ipi-row">
+                            <input class="ipi-input" value="${this.escapeAttr(it.teacher)}" maxlength="100" placeholder="Öğretmen (isteğe bağlı)" aria-label="Öğretmen" oninput="app.updateImportItem(${i}, 'teacher', this.value)">
+                        </div>
+                        ${conflict ? '<span class="conflict-badge">⚠️ Mevcut bir dersle çakışıyor</span>' : ''}
+                        ${unc && !conflict ? '<span class="uncertain-badge">❓ Gün/saat tahmini, kontrol et</span>' : ''}
                     </div>
-                </div>`).join('');
+                </div>`;
+            }).join('');
+        },
+
+        updateImportItem(i, field, value) {
+            const it = this._importItems[i];
+            if (!it) return;
+            if (field === 'name' || field === 'teacher') { it[field] = this.safeText(value, 100); return; } // yazarken yeniden çizme
+            if (field === 'day') { it.day = value; it.dayGuessed = false; }
+            if (field === 'start' || field === 'end') {
+                const t = this.normalizeTime(value);
+                if (!t) return;
+                it[field] = t;
+                it._timeEdited = true;
+            }
+            this._renderImportPreviewList();
+        },
+
+        toggleImportItem(i, checked) {
+            const it = this._importItems[i];
+            if (it) it._selected = !!checked;
+            this._updateImportCount();
+        },
+
+        onImportReplaceChange() {
+            const replace = !!this.$('import-replace-existing')?.checked;
+            // Değiştirme seçilince çakışma kalmaz: hepsini seç; kaldırılınca çakışanları bırak
+            this._importItems.forEach(it => { it._selected = replace ? true : !this._importConflict(it); });
+            this._renderImportPreviewList();
         },
 
         closeImportPreview() {
             const modal = this.$('import-preview-modal');
             if (modal) modal.style.display = 'none';
             this._importItems = [];
+            this._importPeriods = [];
         },
 
         toggleAllImportItems(checked) {
@@ -3042,31 +2851,43 @@ ${ocr.text}
         saveImportedSchedule() {
             const selected = this._importItems.filter(it => it._selected);
             if (selected.length === 0) { this.showToast('En az bir ders seçin!', 'warning'); return; }
-
-            let added = 0, skipped = 0;
-            selected.forEach((item, idx) => {
-                const conflict = this.data.schedule.find(c =>
-                    c.day === item.day && !(item.end <= c.start || item.start >= c.end)
-                );
-                if (conflict) { skipped++; return; }
-                this.data.schedule.push({
-                    id: this.makeId(idx),
-                    day: item.day, name: item.name, teacher: item.teacher,
-                    start: item.start, end: item.end, color: item.color
-                });
-                added++;
-            });
-
-            this.saveData();
-            this.renderScheduleList();
-            this.renderDashboard();
-            this.closeImportPreview();
-
-            if (added > 0) {
-                this.showToast(`${added} ders eklendi!${skipped > 0 ? ' (' + skipped + ' çakışma atlandı)' : ''}`, 'success');
-            } else {
-                this.showToast('Seçili derslerin tamamında çakışma var, eklenemedi!', 'warning');
+            const invalid = selected.filter(it => !it.name.trim() || !this.isValidTimeRange(it.start, it.end));
+            if (invalid.length) {
+                this.showToast(`${invalid.length} derste ad boş ya da bitiş saati başlangıçtan önce. Düzeltip tekrar deneyin.`, 'warning');
+                return;
             }
+            const replace = !!this.$('import-replace-existing')?.checked && this.data.schedule.length > 0;
+
+            const doSave = () => {
+                if (replace) this.data.schedule = [];
+                let added = 0, skipped = 0;
+                selected.forEach(item => {
+                    const conflict = this.data.schedule.find(c =>
+                        c.day === item.day && !(item.end <= c.start || item.start >= c.end)
+                    );
+                    if (conflict) { skipped++; return; }
+                    this.data.schedule.push({
+                        id: this.makeId(),
+                        day: item.day, name: item.name.trim(), teacher: item.teacher.trim(),
+                        start: item.start, end: item.end, color: item.color
+                    });
+                    added++;
+                });
+
+                this.saveData();
+                this.renderScheduleList();
+                this.renderDashboard();
+                this.closeImportPreview();
+
+                if (added > 0) {
+                    this.showToast(`${added} ders eklendi!${skipped > 0 ? ' (' + skipped + ' çakışma atlandı)' : ''}`, 'success');
+                } else {
+                    this.showToast('Seçili derslerin tamamında çakışma var, eklenemedi!', 'warning');
+                }
+            };
+
+            if (replace) this.confirm(`Mevcut ${this.data.schedule.length} ders silinecek ve yerine ${selected.length} ders eklenecek.`, doSave);
+            else doSave();
         },
 
         // ═════════ TASKS ═════════
@@ -3803,7 +3624,10 @@ ${ocr.text}
         if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) return;
 
         const DISMISSED_KEY = 'pwa_banner_dismissed';
-        if (localStorage.getItem(DISMISSED_KEY)) return;
+        // Gizli mod / kapalı çerezlerde localStorage hata fırlatabilir; o zaman aşağıdaki pwaInstall/pwaDismiss hiç tanımlanmıyordu
+        let dismissed = false;
+        try { dismissed = !!localStorage.getItem(DISMISSED_KEY); } catch (e) {}
+        if (dismissed) return;
 
         const banner = document.getElementById('pwa-install-banner');
         const installBtn = document.getElementById('pwa-install-btn');
@@ -3844,7 +3668,7 @@ ${ocr.text}
 
         app.pwaDismiss = function() {
             if (banner) banner.classList.remove('visible');
-            localStorage.setItem(DISMISSED_KEY, '1');
+            try { localStorage.setItem(DISMISSED_KEY, '1'); } catch (e) {}
         };
 
         // Hide banner after successful install
