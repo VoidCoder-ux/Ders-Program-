@@ -2664,7 +2664,7 @@
                 const items = this._prepareImportItems(result.items);
                 if (!items.length) throw new Error('Tabloda ders bulunamadı. Programı düz, iyi ışıkta ve tamamı kadrajda olacak şekilde tekrar çekin.');
                 this._importItems = items;
-                this._importPeriods = (result.periods || []).map(p => ({ start: p.start, end: p.end, estimated: !!p.estimated }));
+                this._importPeriods = (result.periods || []).map(p => ({ start: p.start, end: p.end, estimated: !!p.estimated, endEstimated: !!p.endEstimated }));
                 this.closeImportModal();
                 this.showImportPreview();
             } catch (err) {
@@ -2745,7 +2745,9 @@
             box.style.display = 'block';
             const estimated = periods.filter(p => p.estimated).length;
             box.classList.toggle('has-estimate', estimated > 0);
-            if (note) note.textContent = estimated ? `— ${estimated} tanesi okunamadı, kontrol et` : '';
+            const endsComputed = periods.some(p => p.endEstimated && !p.estimated);
+            if (note) note.textContent = estimated ? `— ${estimated} tanesi okunamadı, kontrol et`
+                : (endsComputed ? '— bitişler ders süresine göre hesaplandı' : '');
             listEl.innerHTML = periods.map((p, i) => `
                 <div class="import-period-row${p.estimated ? ' estimated' : ''}">
                     <span class="import-period-no">${i + 1}.</span>
@@ -2761,7 +2763,7 @@
             const t = this.normalizeTime(value);
             if (!p || !t || (field !== 'start' && field !== 'end')) return;
             p[field] = t;
-            p.estimated = false;
+            if (field === 'start') p.estimated = false; else p.endEstimated = false;
             this._importItems.forEach(it => {
                 if (it._timeEdited) return;
                 if (field === 'start' && it.period === i + 1) it.start = t;

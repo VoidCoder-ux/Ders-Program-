@@ -25,6 +25,9 @@
     // Ders olmayan alt satırlar (imza, sınıf öğretmeni vb.)
     const SKIP_ROW_RE = /^(imza|sinif|ogrt|ogretmen|aciklama|not)/;
     const LETTER_RE = /[A-Za-zÇĞİÖŞÜçğıöşüÂâÎîÛû]/;
+    // Boş okunan hücre için sırayla denenen ayarlar: [okuma modu, büyütme, siyah-beyaz]
+    // (kalın ve büyük harfler ya da hücredeki gölge bandı motoru boş döndürebiliyor)
+    const RETRY_LADDER = [['6', 2, true], ['6', 1, true], ['6', 0.5, false], ['6', 0.6, true], ['7', 1, true], ['6', 3, false]];
 
     const pad2 = n => String(n).padStart(2, '0');
     const fmtTime = min => `${pad2(Math.floor(min / 60) % 24)}:${pad2(min % 60)}`;
@@ -52,15 +55,39 @@
         return '';
     }
 
+    function editDistance(a, b) {
+        const dp = Array.from({ length: a.length + 1 }, (_, i) => [i, ...new Array(b.length).fill(0)]);
+        for (let j = 1; j <= b.length; j++) dp[0][j] = j;
+        for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) {
+            dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        }
+        return dp[a.length][b.length];
+    }
+
+    // OCR'ın bir harfi kaçırdığı gün etiketleri ("UM." → CUM, "AR." → ÇAR): yalnızca tek bir güne uyuyorsa kabul
+    function fuzzyDay(token) {
+        if (token.length < 2) return '';
+        const hits = new Set();
+        DAY_KEYS.forEach((keys, i) => keys.forEach(k => { if (k.length >= 3 && editDistance(token, k) <= 1) hits.add(i); }));
+        return hits.size === 1 ? DAY_NAMES[[...hits][0]] : '';
+    }
+
     // Gün hücresindeki metinden gün adını bulur; "İmza" gibi satırlar için 'skip' döner
     function dayFromCellText(text) {
         const folded = fold(text).replace(/[^a-z\s]/g, ' ').trim();
         if (SKIP_ROW_RE.test(folded.replace(/\s+/g, ''))) return 'skip';
-        for (const tok of folded.split(/\s+/)) {
+        const tokens = folded.split(/\s+/).filter(Boolean);
+        for (const tok of tokens) {
             const d = normalizeDay(tok);
             if (d) return d;
         }
-        return normalizeDay(folded);
+        const whole = normalizeDay(folded);
+        if (whole) return whole;
+        for (const tok of tokens) {
+            const d = fuzzyDay(tok);
+            if (d) return d;
+        }
+        return '';
     }
 
     // Metindeki saatleri dakika olarak döndürür: "8.40 - 9.20", "10.35-11.15", "1130-1210", "8:4O"
@@ -92,8 +119,16 @@
             if (col.end != null && (col.end <= prev || (col.start != null && col.end <= col.start))) col.end = null;
             if (col.end != null) prev = col.end; else if (col.start != null) prev = col.start;
         });
-        const known = c.map(x => x.start != null && x.end != null);
-        const dur = Math.round(median(c.filter(x => x.start != null && x.end != null).map(x => x.end - x.start))) || 40;
+        const startKnown = c.map(x => x.start != null);
+        const endKnown = c.map(x => x.end != null);
+        let dur = Math.round(median(c.filter(x => x.start != null && x.end != null).map(x => x.end - x.start)));
+        if (!dur) {
+            // Yalnızca başlangıç saatleri var: standart 40 dk; başlangıçlar daha sık ise aradan 10 dk teneffüs düş
+            const diffs = [];
+            for (let i = 1; i < c.length; i++) if (c[i - 1].start != null && c[i].start != null) diffs.push(c[i].start - c[i - 1].start);
+            const minDiff = diffs.length ? Math.min(...diffs) : 0;
+            dur = minDiff && minDiff < 50 ? Math.max(20, minDiff - 10) : 40;
+        }
         // Teneffüs süresi: öğle arası gibi uzun boşluklar ortalamayı bozmasın
         const gaps = [];
         for (let i = 1; i < c.length; i++) if (c[i - 1].end != null && c[i].start != null) gaps.push(c[i].start - c[i - 1].end);
@@ -128,7 +163,8 @@
             let t = 9 * 60;
             c.forEach(x => { x.start = t; x.end = t + 40; t += 50; });
         }
-        return c.map((x, i) => ({ start: fmtTime(x.start), end: fmtTime(x.end), estimated: !known[i] }));
+        // estimated: başlangıç fotoğraftan okunamadı; endEstimated: bitiş ders süresinden hesaplandı
+        return c.map((x, i) => ({ start: fmtTime(x.start), end: fmtTime(x.end), estimated: !startKnown[i], endEstimated: !endKnown[i] }));
     }
 
     function cleanToken(t) {
@@ -157,7 +193,8 @@
         const dedupe = arr => arr.filter((t, i) => i === 0 || fold(t) !== fold(arr[i - 1]));
         const name = dedupe(inReadingOrder(toks.filter(k => k.h >= H * 0.62))).join(' ');
         const teacher = dedupe(inReadingOrder(toks.filter(k => k.h < H * 0.62)).filter(t => fold(t) !== 'grup')).join(' ');
-        return name ? { name, teacher } : null;
+        // Tek harf (kırpılmış yazı ya da leke) ders adı sayılmaz
+        return fold(name).replace(/[^a-z]/g, '').length >= 2 ? { name, teacher } : null;
     }
 
     // ═════════ GÖRÜNTÜ İŞLEME ═════════
@@ -565,7 +602,7 @@
     }
 
     // Hücre içini (çizgiler hariç) büyütüp okur
-    async function ocrRegion(worker, src, rect, scale = 2, sink = null) {
+    async function ocrRegion(worker, src, rect, scale = 2, sink = null, bw = false) {
         const cw = Math.round(rect.x1 - rect.x0), ch = Math.round(rect.y1 - rect.y0);
         if (cw < 6 || ch < 6) return { text: '', words: [] };
         const pad = 12;
@@ -593,6 +630,13 @@
             for (let j = 0; j < d.length; j += 4) { const v = (d[j] - lo) * sc; d[j] = d[j + 1] = d[j + 2] = v < 0 ? 0 : v > 255 ? 255 : v; }
         } else {
             for (let j = 0; j < d.length; j += 4) d[j + 1] = d[j + 2] = d[j];
+        }
+        if (bw) {
+            // Saf siyah/beyaz: hücredeki gölge bandı motorun kendi eşiğinde yazıyla birleşip onu yutmasın
+            const g = new Uint8ClampedArray(iw * ih);
+            for (let i = 0; i < g.length; i++) g[i] = d[i * 4];
+            const b = binarize(g, iw, ih, Math.max(15, Math.round(Math.min(iw, ih) / 4)), 0.25);
+            for (let i = 0; i < g.length; i++) { const v = b[i] ? 0 : 255; d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = v; }
         }
         ctx.putImageData(id, pad, pad);
         const { data } = await worker.recognize(c, {}, { text: true, blocks: true });
@@ -630,6 +674,23 @@
             if (best.times.length >= 2) break;
         }
         return best;
+    }
+
+    // Başlık hücrelerinden okunan saat listelerini sütun saatlerine çevirir.
+    // "08:40 - 09:20" gibi çiftler doğrudan kullanılır. Bazı programlarda yalnızca başlangıç ("08:40") yazar:
+    // sütunların çoğunda tek saat varsa bunlar başlangıç kabul edilir. Tek bir sütunda tek bir saat okunduysa
+    // başlangıç mı bitiş mi bilinemez; tüm düzeni kaydırmasın diye yok sayılır.
+    function headerColumns(timesPerCol) {
+        const isPair = t => t.length >= 2 && t[1] - t[0] >= 20 && t[1] - t[0] <= 120;
+        const pairs = timesPerCol.filter(isPair).length;
+        const withAny = timesPerCol.filter(t => t.length >= 1).length;
+        const half = Math.ceil(timesPerCol.length / 2);
+        const startsOnly = pairs < half && withAny >= Math.max(2, half);
+        return timesPerCol.map(t => {
+            if (isPair(t)) return { start: t[0], end: t[1] };
+            if (startsOnly && t.length >= 1) return { start: t[0] };
+            return {};
+        });
     }
 
     async function read(file, opts = {}) {
@@ -754,17 +815,17 @@
             const nCols = tpl.seps.length - 2;
 
             // 4) Ders saatleri (başlık satırından)
-            const cols = [];
+            let cols = [];
             if (hasHeader) {
                 const hb = rows.bands[headerIndex];
+                const read = [];
                 for (let c = 1; c <= nCols; c++) {
                     onProgress({ phase: 'header', done: c, total: nCols });
                     const r = await readHeaderTimes(worker, ocrSrc, toSrc(bandRect(hb, tpl.seps[c], tpl.seps[c + 1], 6, w, h)), kk);
                     debug.text.push(`[başlık ${c}] ${r.text.replace(/\s+/g, ' ').trim()}`);
-                    // Tek başına okunan saat başlangıç mı bitiş mi belli değil; yalnızca makul çiftler kullanılır
-                    const dur = r.times.length >= 2 ? r.times[1] - r.times[0] : 0;
-                    cols.push(dur >= 20 && dur <= 120 ? { start: r.times[0], end: r.times[1] } : {});
+                    read.push(r.times);
                 }
+                cols = headerColumns(read);
             } else {
                 for (let c = 1; c <= nCols; c++) cols.push({});
             }
@@ -801,9 +862,17 @@
                 const courses = [];
                 for (const cell of job.cells) {
                     onProgress({ phase: 'cells', done: ++done, total });
-                    const r = await ocrRegion(worker, ocrSrc, toSrc(cell.rect), 2 / kk, debug.crops);
+                    let r = await ocrRegion(worker, ocrSrc, toSrc(cell.rect), 2 / kk, debug.crops);
+                    let parsed = splitCellText(r.words);
+                    // Kısa ve seyrek yazılarda (ör. "DİN 8") seyrek metin modu bazen boş döner: başka modlarla tekrar dene
+                    for (const [psm, zoom, bw] of RETRY_LADDER) {
+                        if (parsed) break;
+                        await setMode(psm);
+                        r = await ocrRegion(worker, ocrSrc, toSrc(cell.rect), zoom / kk, null, bw);
+                        parsed = splitCellText(r.words);
+                        await setMode('11');
+                    }
                     debug.text.push(`[${dayText || '?'} ${cell.c0}${cell.c1 > cell.c0 ? '-' + cell.c1 : ''}] ${r.text.replace(/\s+/g, ' ').trim()}`);
-                    const parsed = splitCellText(r.words);
                     if (parsed) courses.push({ ...parsed, c0: cell.c0, c1: cell.c1 });
                 }
                 rowsOut.push({ dayText, day, courses });
@@ -852,6 +921,6 @@
 
     global.ScheduleReader = {
         read,
-        _internals: { fold, normalizeDay, dayFromCellText, parseTimes, inferColumnTimes, splitCellText, findPeaks, fillLine, trackSeparators, binarize, estimateSkew, workingCanvas, canvasToGray, rotateCanvas, horizontalRuns, verticalRuns, detectRows, bandSeparators, loadImage, createWorker, ocrRegion, bandRect, grayToCanvas }
+        _internals: { fold, normalizeDay, dayFromCellText, parseTimes, inferColumnTimes, headerColumns, splitCellText, findPeaks, fillLine, trackSeparators, binarize, estimateSkew, workingCanvas, canvasToGray, rotateCanvas, horizontalRuns, verticalRuns, detectRows, bandSeparators, loadImage, createWorker, ocrRegion, bandRect, grayToCanvas }
     };
 })(typeof window !== 'undefined' ? window : globalThis);
