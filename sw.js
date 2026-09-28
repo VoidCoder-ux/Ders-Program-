@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ogrenci-asistani-v9';
+const CACHE_NAME = 'ogrenci-asistani-v10';
 // Yazı tanıma motoru büyük (~10 MB) ve sürümlüdür: uygulama güncellemelerinde silinmeyen ayrı bir önbellekte tutulur,
 // böylece her güncellemede yeniden inmez ve bir kez indikten sonra internetsiz çalışır.
 const VENDOR_CACHE = 'ogrenci-asistani-tesseract-5.1.1';
