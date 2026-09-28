@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Gelişmiş Öğrenci Asistanı</title>
 
     <!-- PWA -->
@@ -895,12 +895,24 @@
         .bottom-nav-scroll {
             display: flex;
             overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+            overflow-y: hidden;
             scrollbar-width: none;
             -ms-overflow-style: none;
             gap: 2px;
             padding: 0 0.25rem;
+            /* Yatay sürüklemeyi JS yönetir (initBottomNavDrag): iPhone Safari'de sabit menüdeki yerel
+               yatay kaydırma çalışmayabiliyordu; menü yalnızca sekmeye dokununca kayıyordu */
+            touch-action: pan-y;
+            overscroll-behavior-x: contain;
         }
+        /* Kaydırılabilir olduğunu gösteren kenar solmaları */
+        .mobile-bottom-nav::before, .mobile-bottom-nav::after {
+            content: ''; position: absolute; top: 0; bottom: 0; width: 26px;
+            pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 1;
+        }
+        .mobile-bottom-nav::before { left: 0; background: linear-gradient(to right, var(--sidebar-bg), transparent); }
+        .mobile-bottom-nav::after { right: 0; background: linear-gradient(to left, var(--sidebar-bg), transparent); }
+        .mobile-bottom-nav.can-left::before, .mobile-bottom-nav.can-right::after { opacity: 1; }
         .bottom-nav-scroll::-webkit-scrollbar { display: none; }
         .bottom-nav-item {
             flex: 0 0 auto;
@@ -944,6 +956,7 @@
                 align-items: center;
                 justify-content: center;
                 padding: 0.6rem 1rem;
+                padding-top: calc(0.6rem + env(safe-area-inset-top, 0px));
                 background: var(--sidebar-bg);
                 border-bottom: 1px solid var(--border);
                 flex-shrink: 0;
@@ -1686,6 +1699,7 @@
 
             setInterval(() => this.updateDateAndGreeting(), 60000);
             this.bindEventDelegation();
+            this.initBottomNavDrag();
 
             document.addEventListener('keydown', (e) => {
                 if ((e.ctrlKey || e.metaKey) && e.key >= '1' && e.key <= '8') {
@@ -2177,6 +2191,68 @@
         switchTabByIndex(index) {
             const tabs = ['dashboard','schedule','agenda','notes','flashcards','habits','gpa','pomodoro'];
             if (tabs[index]) this.switchTab(tabs[index]);
+        },
+
+        // Alt menüde parmakla yatay kaydırma. Bazı iPhone'larda (Safari/WebKit) sabit alt menüdeki yerel yatay
+        // kaydırma çalışmıyordu; kaydırmayı burada kendimiz yapıyoruz (CSS'te touch-action: pan-y).
+        initBottomNavDrag() {
+            const el = this.$('bottom-nav-scroll');
+            const nav = this.$('mobile-bottom-nav');
+            if (!el) return;
+            const updateHints = () => {
+                if (!nav) return;
+                const max = el.scrollWidth - el.clientWidth;
+                nav.classList.toggle('can-left', el.scrollLeft > 4);
+                nav.classList.toggle('can-right', el.scrollLeft < max - 4);
+            };
+            let startX = 0, startY = 0, startLeft = 0, lastX = 0, lastT = 0, vel = 0;
+            let tracking = false, dragging = false, raf = 0;
+            el.addEventListener('touchstart', (e) => {
+                if (e.touches.length !== 1) return;
+                cancelAnimationFrame(raf);
+                const t = e.touches[0];
+                startX = lastX = t.clientX; startY = t.clientY; startLeft = el.scrollLeft;
+                lastT = performance.now(); vel = 0;
+                tracking = true; dragging = false;
+            }, { passive: true });
+            el.addEventListener('touchmove', (e) => {
+                if (!tracking) return;
+                const t = e.touches[0];
+                const dx = t.clientX - startX, dy = t.clientY - startY;
+                if (!dragging) {
+                    if (Math.abs(dx) < 6) return;
+                    if (Math.abs(dy) > Math.abs(dx)) { tracking = false; return; } // dikey hareket: menüyü kaydırma
+                    dragging = true;
+                }
+                const now = performance.now();
+                vel = (t.clientX - lastX) / Math.max(1, now - lastT);
+                lastX = t.clientX; lastT = now;
+                el.scrollLeft = startLeft - dx;
+            }, { passive: true });
+            const end = () => {
+                if (!tracking) return;
+                tracking = false;
+                if (!dragging) return;
+                this._navDraggedAt = Date.now();
+                // Bırakınca hafif süzülme
+                let v = -vel * 16;
+                const glide = () => {
+                    if (Math.abs(v) < 0.5) return;
+                    el.scrollLeft += v;
+                    v *= 0.92;
+                    raf = requestAnimationFrame(glide);
+                };
+                raf = requestAnimationFrame(glide);
+            };
+            el.addEventListener('touchend', end, { passive: true });
+            el.addEventListener('touchcancel', end, { passive: true });
+            // Sürükleme bittiğinde parmağın kalktığı sekmeye yanlışlıkla geçilmesin
+            el.addEventListener('click', (e) => {
+                if (this._navDraggedAt && Date.now() - this._navDraggedAt < 400) { e.stopPropagation(); e.preventDefault(); }
+            }, true);
+            el.addEventListener('scroll', updateHints, { passive: true });
+            window.addEventListener('resize', updateHints);
+            updateHints();
         },
 
         _scrollBottomNav() {
