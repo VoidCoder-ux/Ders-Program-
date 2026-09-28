@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ogrenci-asistani-v7';
+const CACHE_NAME = 'ogrenci-asistani-v8';
 const NETWORK_TIMEOUT = 8000;
 
 function timeout(ms) {

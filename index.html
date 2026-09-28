@@ -627,6 +627,8 @@
         @keyframes importSpin { to { transform: rotate(360deg); } }
         .import-status-box { text-align: center; padding: 0.65rem; color: var(--text-muted); font-size: 0.88rem; border-radius: var(--radius-sm); background: var(--primary-light); margin-top: 0.75rem; }
         .import-status-box.error { background: var(--danger-light); color: var(--danger); }
+        .import-source-row { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+        .import-source-row button { flex: 1; font-size: 0.85rem; padding: 0.6rem 0.5rem; }
         .import-btn-row { display: flex; gap: 0.6rem; margin-top: 1rem; flex-wrap: wrap; }
         .import-btn-row button { flex: 1; min-width: 80px; }
 
@@ -1566,6 +1568,13 @@
                     <div class="drop-text" id="import-drop-text">Fotoğraf seçin veya buraya sürükleyin<br><small>JPG, PNG, WEBP desteklenir</small></div>
                     <img id="import-img-preview" class="import-img-preview" style="display:none;" alt="Önizleme">
                 </div>
+                <div class="import-source-row">
+                    <button type="button" class="btn-secondary" onclick="app.openImportCamera()">📷 Kamera ile Çek</button>
+                    <button type="button" class="btn-secondary" onclick="app.$('import-file-input')?.click()">🖼️ Galeriden Seç</button>
+                </div>
+                <!-- Mobilde doğrudan arka kamerayı açar -->
+                <input type="file" accept="image/*" capture="environment" id="import-camera-input" style="display:none;" onchange="app.setImportFile(this.files[0])">
+                <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.4rem;">💡 İpucu: Programı düz, iyi ışıkta ve kadraja tam sığacak şekilde çekin; gölge ve eğik açı okumayı bozar.</p>
             </div>
 
             <div id="import-status-box" style="display:none;"></div>
@@ -2529,6 +2538,8 @@
             if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Analiz Et'; }
             const fi = this.$('import-file-input');
             if (fi) fi.value = '';
+            const ci = this.$('import-camera-input');
+            if (ci) ci.value = '';
         },
 
         toggleApiKeyVisibility() {
@@ -2544,25 +2555,81 @@
             }
         },
 
-        setImportFile(file) {
+        openImportCamera() {
+            const input = this.$('import-camera-input');
+            if (!input) return;
+            input.value = '';
+            input.click();
+        },
+
+        // Büyük kamera fotoğraflarını en uzun kenarı maxDim olacak şekilde JPEG'e küçültür
+        _resizeImageFile(file, maxDim = 2000) {
+            return new Promise((resolve) => {
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => {
+                    URL.revokeObjectURL(url);
+                    const w = img.naturalWidth, h = img.naturalHeight;
+                    if (!w || !h) return resolve(file);
+                    const scale = Math.min(1, maxDim / Math.max(w, h));
+                    const smallEnough = scale === 1 && file.size <= 4 * 1024 * 1024;
+                    if (smallEnough && /^image\/(jpeg|png|webp)$/.test(file.type)) return resolve(file);
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.round(w * scale);
+                        canvas.height = Math.round(h * scale);
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        canvas.toBlob((blob) => {
+                            if (!blob) return resolve(file);
+                            const name = String(file.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg';
+                            resolve(new File([blob], name, { type: 'image/jpeg' }));
+                        }, 'image/jpeg', 0.9);
+                    } catch (e) {
+                        resolve(file);
+                    }
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+                img.src = url;
+            });
+        },
+
+        async setImportFile(file) {
             if (!file) return;
-            if (!file.type.startsWith('image/')) {
+            if (file.type && !file.type.startsWith('image/')) {
                 this.showToast('Lütfen bir resim dosyası seçin!', 'warning'); return;
             }
-            if (file.size > 8 * 1024 * 1024) {
-                this.showToast('Fotoğraf 8 MB altında olmalı.', 'warning'); return;
+            if (file.size > 25 * 1024 * 1024) {
+                this.showToast('Fotoğraf 25 MB altında olmalı.', 'warning'); return;
             }
-            this._importFile = file;
+            const dt = this.$('import-drop-text');
+            if (dt) dt.innerHTML = '⏳ Fotoğraf hazırlanıyor...';
+
+            const prepared = await this._resizeImageFile(file, 2000);
+            if (!/^image\/(jpeg|png|webp|gif)$/.test(prepared.type)) {
+                if (dt) dt.innerHTML = 'Fotoğraf seçin veya buraya sürükleyin<br><small>JPG, PNG, WEBP desteklenir</small>';
+                this.showToast('Bu fotoğraf biçimi açılamadı (ör. HEIC). Lütfen JPG olarak kaydedip tekrar deneyin.', 'warning');
+                return;
+            }
+            if (prepared.size > 8 * 1024 * 1024) {
+                if (dt) dt.innerHTML = 'Fotoğraf seçin veya buraya sürükleyin<br><small>JPG, PNG, WEBP desteklenir</small>';
+                this.showToast('Fotoğraf çok büyük. Daha düşük çözünürlükte deneyin.', 'warning');
+                return;
+            }
+
+            this._importFile = prepared;
             const reader = new FileReader();
             reader.onload = (e) => {
                 const prev = this.$('import-img-preview');
                 if (prev) { prev.src = e.target.result; prev.style.display = 'block'; }
-                const dt = this.$('import-drop-text');
-                if (dt) dt.innerHTML = `📷 ${this.escapeHtml(file.name)}`;
+                const sizeMb = (prepared.size / (1024 * 1024)).toFixed(1);
+                if (dt) dt.innerHTML = `📷 ${this.escapeHtml(prepared.name)} <small>(${sizeMb} MB)</small>`;
                 const dz = this.$('import-drop-zone');
                 if (dz) dz.classList.add('has-file');
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(prepared);
         },
 
         async processScheduleImage() {
@@ -2571,6 +2638,7 @@
             if (!apiKey) { this.showToast('Lütfen API anahtarını girin!', 'warning'); return; }
             if (!this._importFile) { this.showToast('Lütfen bir fotoğraf seçin!', 'warning'); return; }
             this._lastOcrText = '';
+            this._lastAiText = '';
             // "Hatırla" seçiliyse anahtarı hemen kaydet (analiz başarısız olsa bile)
             this._persistRememberedKey(provider, apiKey);
 
@@ -2592,34 +2660,36 @@
                     ? await this._callDeepSeek(apiKey, base64, mediaType, prompt)
                     : await this._callClaude(apiKey, base64, mediaType, prompt);
 
-                const jsonMatch = text.match(/\[[\s\S]*\]/);
-                if (!jsonMatch) throw new Error('Yanıtta ders programı bulunamadı. Daha net bir fotoğraf deneyin.');
-
-                const parsed = JSON.parse(jsonMatch[0]);
-                if (!Array.isArray(parsed) || parsed.length === 0) {
+                this._lastAiText = text;
+                const parsed = this._extractJsonArray(text);
+                if (parsed.length === 0) {
                     throw new Error('Hiç ders tespit edilemedi. Daha net veya farklı bir fotoğraf deneyin.');
                 }
 
-                const validDays = ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
-                const colorPalette = ['#4f46e5','#10b981','#ef4444','#f59e0b','#3b82f6','#ec4899'];
+                const colorPalette = ['#4f46e5','#10b981','#ef4444','#f59e0b','#3b82f6','#ec4899','#8b5cf6','#14b8a6','#f97316','#84cc16'];
+                const colorByName = {};
 
                 const valid = parsed
                     .map((it, idx) => {
-                        if (!it || typeof it !== 'object' || !validDays.includes(it.day)) return null;
+                        if (!it || typeof it !== 'object') return null;
+                        const day = this._normalizeDayName(it.day);
                         const name = this.safeText(it.name, 100);
                         const start = this.normalizeTime(it.start);
                         const end = this.normalizeTime(it.end);
-                        if (!name || !this.isValidTimeRange(start, end)) return null;
+                        if (!day || !name || !this.isValidTimeRange(start, end)) return null;
                         const hasConflict = !!this.data.schedule.find(c =>
-                            c.day === it.day && !(end <= c.start || start >= c.end)
+                            c.day === day && !(end <= c.start || start >= c.end)
                         );
+                        // Aynı ders her gün aynı renkte görünsün
+                        const colorKey = name.toLocaleUpperCase('tr-TR');
+                        if (!colorByName[colorKey]) colorByName[colorKey] = colorPalette[Object.keys(colorByName).length % colorPalette.length];
                         return {
                             id: this.makeId(idx),
-                            day: it.day,
+                            day,
                             name,
                             teacher: this.safeText(it.teacher, 100),
                             start, end,
-                            color: colorPalette[idx % colorPalette.length],
+                            color: colorByName[colorKey],
                             _selected: !hasConflict,
                             _conflict: hasConflict
                         };
@@ -2637,14 +2707,50 @@
                     sb.className = 'import-status-box error';
                     let html = `❌ ${this.escapeHtml(err.message)}`;
                     // DeepSeek/OCR yolunda okunan ham metni göster (teşhis + şeffaflık)
+                    const preStyle = 'white-space:pre-wrap;font-size:0.7rem;line-height:1.3;max-height:30vh;overflow:auto;margin-top:0.4rem;background:rgba(0,0,0,0.2);padding:0.5rem;border-radius:6px;';
                     if (provider === 'deepseek' && this._lastOcrText && this._lastOcrText.trim()) {
-                        html += `<details style="margin-top:0.6rem;"><summary style="cursor:pointer;font-size:0.8rem;">🔎 Fotoğraftan okunan metni göster</summary><pre style="white-space:pre-wrap;font-size:0.7rem;line-height:1.3;max-height:30vh;overflow:auto;margin-top:0.4rem;background:rgba(0,0,0,0.2);padding:0.5rem;border-radius:6px;">${this.escapeHtml(this._lastOcrText)}</pre></details>`;
+                        html += `<details style="margin-top:0.6rem;"><summary style="cursor:pointer;font-size:0.8rem;">🔎 Fotoğraftan okunan metni göster</summary><pre style="${preStyle}">${this.escapeHtml(this._lastOcrText)}</pre></details>`;
+                    }
+                    if (this._lastAiText && this._lastAiText.trim()) {
+                        html += `<details style="margin-top:0.4rem;"><summary style="cursor:pointer;font-size:0.8rem;">🤖 Yapay zeka yanıtını göster</summary><pre style="${preStyle}">${this.escapeHtml(this._lastAiText.slice(0, 4000))}</pre></details>`;
                     }
                     sb.innerHTML = html;
                 }
                 const btn = this.$('import-analyze-btn');
                 if (btn) { btn.disabled = false; btn.innerHTML = '🔍 Tekrar Dene'; }
             }
+        },
+
+        // Yapay zeka yanıtından ders dizisini güvenle çıkarır (```json blokları, açıklama metni, {"dersler":[...]} biçimi)
+        _extractJsonArray(text) {
+            const raw = String(text || '').replace(/```(?:json)?/gi, '').trim();
+            const pick = (val) => {
+                if (Array.isArray(val)) return val;
+                if (val && typeof val === 'object') return Object.values(val).find(Array.isArray) || null;
+                return null;
+            };
+            try { const v = pick(JSON.parse(raw)); if (v) return v; } catch (e) {}
+            const start = raw.indexOf('['), end = raw.lastIndexOf(']');
+            if (start !== -1 && end > start) {
+                try { const v = pick(JSON.parse(raw.slice(start, end + 1))); if (v) return v; } catch (e) {}
+            }
+            throw new Error('Yapay zeka yanıtı okunamadı (geçersiz JSON). Lütfen tekrar deneyin.');
+        },
+
+        // "Pa", "pzt", "CUMA" gibi yazımları uygulamanın gün adlarına çevirir
+        _normalizeDayName(value) {
+            const s = String(value ?? '').trim().replace(/\.$/, '').toLocaleLowerCase('tr-TR');
+            const map = [
+                ['Pazartesi', ['pazartesi', 'pzt', 'pts', 'pa', 'pt']],
+                ['Salı', ['salı', 'sali', 'sal', 'sa']],
+                ['Çarşamba', ['çarşamba', 'carsamba', 'çar', 'car', 'ça', 'ca', 'çrş']],
+                ['Perşembe', ['perşembe', 'persembe', 'per', 'pe', 'prş']],
+                ['Cuma', ['cuma', 'cum', 'cu']],
+                ['Cumartesi', ['cumartesi', 'cmt', 'cts', 'ct']],
+                ['Pazar', ['pazar', 'paz', 'pz']]
+            ];
+            for (const [day, keys] of map) if (keys.includes(s)) return day;
+            return '';
         },
 
         _scheduleExtractionPrompt() {
@@ -2657,8 +2763,8 @@
 
 KURALLAR:
 1) Günler genelde solda satır, ders saatleri/sıra üstte sütun olur. Türkçe gün kısaltmalarını çöz: Pzt/Pa/Pt=Pazartesi, Sal/Sa=Salı, Çar/Ça=Çarşamba, Per/Pe=Perşembe, Cum/Cu=Cuma, Cmt/Ct=Cumartesi, Paz/Pz=Pazar.
-2) Boş hücreleri ve "TÖM/TÖMer/teneffüs/öğle/yemek" gibi ders olmayan kutuları atla.
-3) Hücrede yalnızca ders saati numarası (1,2,3...) varsa ve net saat yoksa, saatleri ŞÖYLE tahmin et: 1. ders 09:00-09:40, sonra her ders 40 dakika ve aralarda 10 dakika teneffüs (2. ders 09:50-10:30, 3. ders 10:40-11:20, ...). Numara hangi sütundaysa o saat aralığını kullan.
+2) Boş hücreleri ve "teneffüs/öğle arası/yemek/İmza/Sınıf Öğrt." gibi ders olmayan satır ve kutuları atla.
+3) Sütun başlıklarında saat aralıkları (ör. "8.40 - 9.20") varsa saatleri MUTLAKA oradan al. Yalnızca ders saati numarası (1,2,3...) varsa ve hiç saat yoksa, saatleri ŞÖYLE tahmin et: 1. ders 09:00-09:40, sonra her ders 40 dakika ve aralarda 10 dakika teneffüs (2. ders 09:50-10:30, 3. ders 10:40-11:20, ...). Numara hangi sütundaysa o saat aralığını kullan.
 4) Aynı ders birden çok ardışık saatte ise her saati ayrı nesne yap (ya da bitişik saatleri birleştir).
 5) Metin OCR'dan gelmiş olabilir; harf hatalarını mantıkla düzelt, emin olamadığın hücreyi atla ama mümkün olduğunca çok ders çıkar.
 
@@ -2696,20 +2802,34 @@ Yalnızca geçerli bir JSON dizisi döndür, başka hiçbir açıklama/metin ekl
 
         async _callDeepSeek(apiKey, base64, mediaType, prompt) {
             const model = this.$('import-model')?.value.trim() || 'deepseek-chat';
-            // DeepSeek API'si görsel kabul etmez; önce cihazda OCR ile metni çıkar
-            const ocrText = await this._ocrImage(`data:${mediaType};base64,${base64}`);
-            if (!ocrText || ocrText.trim().length < 3) {
+            // DeepSeek API'si görsel kabul etmez; önce cihazda OCR ile metni ve konumları çıkar
+            const ocr = await this._ocrImage(`data:${mediaType};base64,${base64}`);
+            if (!ocr.text || ocr.text.trim().length < 3) {
                 throw new Error('Fotoğraftan metin okunamadı (OCR boş). Daha net, düz ve iyi aydınlatılmış bir fotoğraf deneyin.');
             }
             const sb = this.$('import-status-box');
             if (sb) sb.innerHTML = '🤖 DeepSeek ders programını düzenliyor...';
 
-            const userText = `${prompt}
-
-Aşağıda bir ders programı fotoğrafından OCR ile çıkarılmış HAM metin var. Metin gürültülü olabilir, satır/sütun hizası bozuk olabilir; en mantıklı şekilde yorumla. Saatler ve gün/sütun eşleşmelerini tahmin et:
+            const layoutPart = ocr.layout ? `1) KONUMLU OCR — her kelime "kelime@xN" biçiminde; N kelimenin yatay konumu, "y=" satırın dikey konumu${ocr.width ? ` (görüntü genişliği ≈ ${ocr.width}px)` : ''}:
+- Üst satırlardaki ders saati numaraları (1, 2, 3...) ve saat aralıkları (ör. 8.40 - 9.20) SÜTUN BAŞLIKLARIDIR; x değerleri sütunların merkezidir. Saatleri bu başlıklardan al.
+- Soldaki gün kısaltmaları (Pa, Sa, Ça, Pe, Cu...) SATIR BAŞLIKLARIDIR; her dersi y değeri en yakın gün satırına ata.
+- Her dersi x değeri en yakın sütuna ata. Bir ders iki sütunun tam ortasındaysa birleşik (çok saatlik) derstir: başlangıcı soldaki sütunun başlangıcı, bitişi sağdaki sütunun bitişidir.
+- Ders adının hemen altındaki küçük kelime genelde öğretmen adıdır.
+- "İmza", "Sınıf Öğrt." gibi satırları ve boş satırları atla.
 
 """
-${ocrText}
+${ocr.layout}
+"""
+
+2) DÜZ OCR METNİ (yedek):` : 'OCR METNİ:';
+
+            const userText = `${prompt}
+
+Aşağıda bir ders programı fotoğrafının OCR çıktısı var. Metin gürültülü olabilir; harf hatalarını mantıkla düzelt.
+
+${layoutPart}
+"""
+${ocr.text}
 """`;
 
             const resp = await fetch('https://api.deepseek.com/chat/completions', {
@@ -2720,7 +2840,8 @@ ${ocrText}
                 },
                 body: JSON.stringify({
                     model,
-                    max_tokens: 2048,
+                    max_tokens: 4096,
+                    temperature: 0,
                     messages: [
                         { role: 'system', content: 'Ders programı fotoğraflarından OCR ile çıkarılan metni yapılandırılmış JSON\'a çeviren bir asistansın. Yalnızca geçerli bir JSON dizisi döndür.' },
                         { role: 'user', content: userText }
@@ -2778,17 +2899,46 @@ ${ocrText}
                             d[i] = d[i + 1] = d[i + 2] = g;
                         }
                         ctx.putImageData(id, 0, 0);
-                        resolve(canvas.toDataURL('image/png'));
+                        resolve({ src: canvas.toDataURL('image/png'), width: w });
                     } catch (e) {
-                        resolve(imageData); // başarısız olursa orijinali kullan
+                        resolve({ src: imageData, width: 0 }); // başarısız olursa orijinali kullan
                     }
                 };
-                img.onerror = () => resolve(imageData);
+                img.onerror = () => resolve({ src: imageData, width: 0 });
                 img.src = imageData;
             });
         },
 
-        // Fotoğraftan metin çıkarır (Türkçe + İngilizce)
+        // Tesseract sürümünden bağımsız olarak tüm kelimeleri (bbox ile) toplar
+        _collectOcrWords(data) {
+            if (Array.isArray(data?.words) && data.words.length) return data.words;
+            const out = [];
+            (data?.blocks || []).forEach(b => (b.paragraphs || []).forEach(p =>
+                (p.lines || []).forEach(l => (l.words || []).forEach(w => out.push(w)))));
+            return out;
+        },
+
+        // OCR kelimelerini konumlarıyla satırlara dizer; tablo yapısı (sütun/satır) korunur
+        _ocrLayoutText(data) {
+            const words = this._collectOcrWords(data)
+                .filter(w => w && w.bbox && String(w.text || '').trim() && (w.confidence == null || w.confidence >= 25))
+                .map(w => ({
+                    t: String(w.text).trim(),
+                    x: Math.round((w.bbox.x0 + w.bbox.x1) / 2),
+                    y: Math.round((w.bbox.y0 + w.bbox.y1) / 2),
+                    h: Math.max(1, w.bbox.y1 - w.bbox.y0)
+                }))
+                .sort((a, b) => a.y - b.y);
+            const rows = [];
+            words.forEach(wd => {
+                const last = rows[rows.length - 1];
+                if (last && Math.abs(last.y - wd.y) <= Math.max(8, last.h * 0.6)) last.items.push(wd);
+                else rows.push({ y: wd.y, h: wd.h, items: [wd] });
+            });
+            return rows.map(r => `y=${r.y}: ` + r.items.sort((a, b) => a.x - b.x).map(i => `${i.t}@x${i.x}`).join('  ')).join('\n');
+        },
+
+        // Fotoğraftan metin + konumlu düzen çıkarır (Türkçe + İngilizce)
         async _ocrImage(imageData) {
             await this._ensureTesseract();
             const sb = this.$('import-status-box');
@@ -2799,21 +2949,22 @@ ${ocrText}
                     sb.innerHTML = `🔎 Fotoğraf okunuyor (OCR)... %${Math.round((m.progress || 0) * 100)}`;
                 }
             };
-            let text = '';
+            let data = null;
+            let worker = null;
             try {
-                const worker = await Tesseract.createWorker('tur+eng', 1, { logger });
-                // PSM 6: tek tip metin bloğu (tablolar için daha iyi)
-                try { await worker.setParameters({ tessedit_pageseg_mode: '6' }); } catch (e) {}
-                const { data } = await worker.recognize(processed);
-                text = data?.text || '';
-                await worker.terminate();
+                worker = await Tesseract.createWorker('tur+eng', 1, { logger });
+                // PSM 11: seyrek metin — tablo hücrelerindeki dağınık yazıları daha iyi bulur
+                try { await worker.setParameters({ tessedit_pageseg_mode: '11' }); } catch (e) {}
+                data = (await worker.recognize(processed.src, {}, { text: true, blocks: true }))?.data;
             } catch (e) {
                 // Worker API başarısızsa basit recognize'a düş
-                const result = await Tesseract.recognize(processed, 'tur+eng', { logger });
-                text = result?.data?.text || '';
+                data = (await Tesseract.recognize(processed.src, 'tur+eng', { logger }))?.data;
+            } finally {
+                if (worker) { try { await worker.terminate(); } catch (e) {} }
             }
+            const text = data?.text || '';
             this._lastOcrText = text;
-            return text;
+            return { text, layout: this._ocrLayoutText(data), width: processed.width };
         },
 
         onImportProviderChange() {
